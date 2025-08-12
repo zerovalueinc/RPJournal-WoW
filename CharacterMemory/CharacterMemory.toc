@@ -4,7 +4,7 @@
 ## Author: You
 ## Version: 1.0.1
 ## SavedVariablesPerCharacter: CharacterMemoryDB
-## IconTexture: Interface\Icons\INV_Scroll_02
+## IconTexture: Interface\AddOns\CharacterMemory\media\CMcompact.png
 ## X-Category: Roleplay
 ## X-Website: https://github.com/YOUR_GITHUB_USERNAME/RPJournal
 

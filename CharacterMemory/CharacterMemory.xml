@@ -681,13 +681,13 @@
         <Layers><Layer level="OVERLAY"><FontString parentKey="text" inherits="GameFontNormalLarge" text="RP Identity"/></Layer></Layers>
       </Frame>
       <EditBox name="$parentTitleEdit" inherits="InputBoxTemplate"><Size x="240" y="20"/><Anchors><Anchor point="TOPLEFT" x="16" y="-96"/></Anchors></EditBox>
-      <Frame name="$parentTitleLabel"><Size y="14"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentTitleEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Title"><Anchors><Anchor point="TOPLEFT"/><Anchor point="TOPRIGHT"/></Anchors></FontString></Layer></Layers></Frame>
+      <Frame name="$parentTitleLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentTitleEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentTitleEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Title" justifyH="LEFT"><Anchors><Anchor point="TOPLEFT"/><Anchor point="TOPRIGHT"/></Anchors></FontString></Layer></Layers></Frame>
       <EditBox name="$parentPronounsEdit" inherits="InputBoxTemplate"><Size x="140" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentTitleEdit" relativePoint="RIGHT" x="16"/></Anchors></EditBox>
-      <Frame name="$parentPronounsLabel"><Size y="14"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentPronounsEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Pronouns"><Anchors><Anchor point="TOPLEFT"/><Anchor point="TOPRIGHT"/></Anchors></FontString></Layer></Layers></Frame>
+      <Frame name="$parentPronounsLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentPronounsEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentPronounsEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Pronouns" justifyH="LEFT"><Anchors><Anchor point="TOPLEFT"/><Anchor point="TOPRIGHT"/></Anchors></FontString></Layer></Layers></Frame>
       <EditBox name="$parentAlignmentEdit" inherits="InputBoxTemplate"><Size x="140" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentPronounsEdit" relativePoint="RIGHT" x="16"/></Anchors></EditBox>
-      <Frame name="$parentAlignmentLabel"><Size y="14"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentAlignmentEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Alignment"><Anchors><Anchor point="TOPLEFT"/><Anchor point="TOPRIGHT"/></Anchors></FontString></Layer></Layers></Frame>
+      <Frame name="$parentAlignmentLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentAlignmentEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentAlignmentEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Alignment" justifyH="LEFT"><Anchors><Anchor point="TOPLEFT"/><Anchor point="TOPRIGHT"/></Anchors></FontString></Layer></Layers></Frame>
       <EditBox name="$parentTagsEdit" inherits="InputBoxTemplate"><Size x="560" y="20"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentTitleEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
-      <Frame name="$parentTagsLabel"><Size y="14"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentTagsEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Tags (comma separated)"><Anchors><Anchor point="TOPLEFT"/><Anchor point="TOPRIGHT"/></Anchors></FontString></Layer></Layers></Frame>
+      <Frame name="$parentTagsLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentTagsEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentTagsEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Tags (comma separated)" justifyH="LEFT"><Anchors><Anchor point="TOPLEFT"/><Anchor point="TOPRIGHT"/></Anchors></FontString></Layer></Layers></Frame>
 
       <!-- Appearance quick stats -->
       <Frame name="$parentTraitsHeader" inherits="CMJ_CategoryHeader">
@@ -695,36 +695,36 @@
         <Layers><Layer level="OVERLAY"><FontString parentKey="text" inherits="GameFontNormalLarge" text="Appearance &amp; Details"/></Layer></Layers>
       </Frame>
       <!-- Row 1: Age / Height / Weight -->
-      <EditBox name="$parentAgeEdit" inherits="InputBoxTemplate"><Size x="100" y="20"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentTraitsHeader" relativePoint="BOTTOMLEFT" x="0" y="-8"/></Anchors></EditBox>
-      <Frame name="$parentAgeLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentAgeEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Age"/></Layer></Layers></Frame>
-      <EditBox name="$parentHeightEdit" inherits="InputBoxTemplate"><Size x="100" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentAgeEdit" relativePoint="RIGHT" x="128"/></Anchors></EditBox>
-      <Frame name="$parentHeightLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentHeightEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Height"/></Layer></Layers></Frame>
-      <EditBox name="$parentWeightEdit" inherits="InputBoxTemplate"><Size x="100" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentHeightEdit" relativePoint="RIGHT" x="128"/></Anchors></EditBox>
-      <Frame name="$parentWeightLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentWeightEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Weight"/></Layer></Layers></Frame>
+      <EditBox name="$parentAgeEdit" inherits="InputBoxTemplate"><Size x="120" y="20"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentTraitsHeader" relativePoint="BOTTOMLEFT" x="0" y="-8"/></Anchors></EditBox>
+      <Frame name="$parentAgeLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentAgeEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentAgeEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Age" justifyH="LEFT"/></Layer></Layers></Frame>
+      <EditBox name="$parentHeightEdit" inherits="InputBoxTemplate"><Size x="120" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentAgeEdit" relativePoint="RIGHT" x="96"/></Anchors></EditBox>
+      <Frame name="$parentHeightLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentHeightEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentHeightEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Height" justifyH="LEFT"/></Layer></Layers></Frame>
+      <EditBox name="$parentWeightEdit" inherits="InputBoxTemplate"><Size x="120" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentHeightEdit" relativePoint="RIGHT" x="96"/></Anchors></EditBox>
+      <Frame name="$parentWeightLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentWeightEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentWeightEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Weight" justifyH="LEFT"/></Layer></Layers></Frame>
       <!-- Row 2: Eyes / Hair / Alias -->
-      <EditBox name="$parentEyesEdit" inherits="InputBoxTemplate"><Size x="120" y="20"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentAgeEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
-      <Frame name="$parentEyesLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentEyesEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Eyes"/></Layer></Layers></Frame>
-      <EditBox name="$parentHairEdit" inherits="InputBoxTemplate"><Size x="120" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentEyesEdit" relativePoint="RIGHT" x="108"/></Anchors></EditBox>
-      <Frame name="$parentHairLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentHairEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Hair"/></Layer></Layers></Frame>
-      <EditBox name="$parentAliasEdit" inherits="InputBoxTemplate"><Size x="160" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentHairEdit" relativePoint="RIGHT" x="108"/></Anchors></EditBox>
-      <Frame name="$parentAliasLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentAliasEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Alias/Nickname"/></Layer></Layers></Frame>
+      <EditBox name="$parentEyesEdit" inherits="InputBoxTemplate"><Size x="140" y="20"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentAgeEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
+      <Frame name="$parentEyesLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentEyesEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentEyesEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Eyes" justifyH="LEFT"/></Layer></Layers></Frame>
+      <EditBox name="$parentHairEdit" inherits="InputBoxTemplate"><Size x="140" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentEyesEdit" relativePoint="RIGHT" x="80"/></Anchors></EditBox>
+      <Frame name="$parentHairLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentHairEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentHairEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Hair" justifyH="LEFT"/></Layer></Layers></Frame>
+      <EditBox name="$parentAliasEdit" inherits="InputBoxTemplate"><Size x="180" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentHairEdit" relativePoint="RIGHT" x="80"/></Anchors></EditBox>
+      <Frame name="$parentAliasLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentAliasEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentAliasEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Alias/Nickname" justifyH="LEFT"/></Layer></Layers></Frame>
       <!-- Row 3: Languages / Proficiencies -->
-      <EditBox name="$parentLanguagesEdit" inherits="InputBoxTemplate"><Size x="260" y="20"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentEyesEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
-      <Frame name="$parentLanguagesLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentLanguagesEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Languages"/></Layer></Layers></Frame>
-      <EditBox name="$parentProficienciesEdit" inherits="InputBoxTemplate"><Size x="260" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentLanguagesEdit" relativePoint="RIGHT" x="24"/></Anchors></EditBox>
-      <Frame name="$parentProficienciesLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentProficienciesEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Proficiencies/Professions"/></Layer></Layers></Frame>
+      <EditBox name="$parentLanguagesEdit" inherits="InputBoxTemplate"><Size x="300" y="20"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentEyesEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
+      <Frame name="$parentLanguagesLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentLanguagesEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentLanguagesEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Languages" justifyH="LEFT"/></Layer></Layers></Frame>
+      <EditBox name="$parentProficienciesEdit" inherits="InputBoxTemplate"><Size x="300" y="20"/><Anchors><Anchor point="LEFT" relativeTo="$parentLanguagesEdit" relativePoint="RIGHT" x="24"/></Anchors></EditBox>
+      <Frame name="$parentProficienciesLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentProficienciesEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentProficienciesEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Proficiencies/Professions" justifyH="LEFT"/></Layer></Layers></Frame>
 
       <!-- Narrative traits -->
-      <EditBox name="$parentPersonalityEdit" inherits="InputBoxTemplate" multiLine="true"><Size x="270" y="80"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLanguagesEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
-      <Frame name="$parentPersonalityLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentPersonalityEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Personality"/></Layer></Layers></Frame>
-      <EditBox name="$parentIdealsEdit" inherits="InputBoxTemplate" multiLine="true"><Size x="270" y="80"/><Anchors><Anchor point="LEFT" relativeTo="$parentPersonalityEdit" relativePoint="RIGHT" x="24"/></Anchors></EditBox>
-      <Frame name="$parentIdealsLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentIdealsEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Ideals"/></Layer></Layers></Frame>
-      <EditBox name="$parentBondsEdit" inherits="InputBoxTemplate" multiLine="true"><Size x="270" y="80"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentPersonalityEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
-      <Frame name="$parentBondsLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentBondsEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Bonds"/></Layer></Layers></Frame>
-      <EditBox name="$parentFlawsEdit" inherits="InputBoxTemplate" multiLine="true"><Size x="270" y="80"/><Anchors><Anchor point="LEFT" relativeTo="$parentBondsEdit" relativePoint="RIGHT" x="24"/></Anchors></EditBox>
-      <Frame name="$parentFlawsLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentFlawsEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Flaws"/></Layer></Layers></Frame>
-      <EditBox name="$parentHobbiesEdit" inherits="InputBoxTemplate" multiLine="true"><Size x="560" y="60"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentBondsEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
-      <Frame name="$parentHobbiesLabel"><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentHobbiesEdit" relativePoint="TOPLEFT" y="4"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormal" text="Hobbies/Interests"/></Layer></Layers></Frame>
+      <EditBox name="$parentPersonalityEdit" inherits="InputBoxTemplate" multiLine="true"><Size x="280" y="72"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLanguagesEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
+      <Frame name="$parentPersonalityLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentPersonalityEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentPersonalityEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Personality" justifyH="LEFT"/></Layer></Layers></Frame>
+      <EditBox name="$parentIdealsEdit" inherits="InputBoxTemplate" multiLine="true"><Size x="280" y="72"/><Anchors><Anchor point="LEFT" relativeTo="$parentPersonalityEdit" relativePoint="RIGHT" x="24"/></Anchors></EditBox>
+      <Frame name="$parentIdealsLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentIdealsEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentIdealsEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Ideals" justifyH="LEFT"/></Layer></Layers></Frame>
+      <EditBox name="$parentBondsEdit" inherits="InputBoxTemplate" multiLine="true"><Size x="280" y="64"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentPersonalityEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
+      <Frame name="$parentBondsLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentBondsEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentBondsEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Bonds" justifyH="LEFT"/></Layer></Layers></Frame>
+      <EditBox name="$parentFlawsEdit" inherits="InputBoxTemplate" multiLine="true"><Size x="280" y="64"/><Anchors><Anchor point="LEFT" relativeTo="$parentBondsEdit" relativePoint="RIGHT" x="24"/></Anchors></EditBox>
+      <Frame name="$parentFlawsLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentFlawsEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentFlawsEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Flaws" justifyH="LEFT"/></Layer></Layers></Frame>
+      <EditBox name="$parentHobbiesEdit" inherits="InputBoxTemplate" multiLine="true"><Size x="584" y="52"/><Anchors><Anchor point="TOPLEFT" relativeTo="$parentBondsEdit" relativePoint="BOTTOMLEFT" y="-24"/></Anchors></EditBox>
+      <Frame name="$parentHobbiesLabel"><Size y="16"/><Anchors><Anchor point="BOTTOMLEFT" relativeTo="$parentHobbiesEdit" relativePoint="TOPLEFT" y="2"/><Anchor point="RIGHT" relativeTo="$parentHobbiesEdit" relativePoint="RIGHT"/></Anchors><Layers><Layer level="OVERLAY"><FontString parentKey="fs" inherits="GameFontNormalSmall" text="Hobbies/Interests" justifyH="LEFT"/></Layer></Layers></Frame>
 
       <!-- RP Bio section with side-by-side editor and preview -->
       <Frame name="$parentBioHeader" inherits="CMJ_CategoryHeader">
@@ -736,11 +736,11 @@
         <Anchors>
           <Anchor point="TOPLEFT" relativeTo="$parentBioHeader" relativePoint="BOTTOMLEFT" x="0" y="-8"/>
           <Anchor point="RIGHT" x="-24"/>
-          <Anchor point="BOTTOM" y="-140"/>
+          <Anchor point="BOTTOM" y="-156"/>
         </Anchors>
       </ScrollFrame>
       <Frame name="$parentPreviewContent">
-        <Size x="760" y="120"/>
+        <Size x="760" y="136"/>
         <Anchors><Anchor point="TOPLEFT" relativeTo="$parentPreviewScroll" relativePoint="TOPLEFT"/></Anchors>
         <Layers>
           <Layer level="OVERLAY">
@@ -749,7 +749,7 @@
         </Layers>
       </Frame>
       <CheckButton name="$parentShowOnTarget" inherits="InterfaceOptionsCheckButtonTemplate">
-        <Anchors><Anchor point="TOPLEFT" relativeTo="$parentBioEdit" relativePoint="BOTTOMLEFT" y="-16"/></Anchors>
+        <Anchors><Anchor point="TOPLEFT" relativeTo="$parentPreviewScroll" relativePoint="BOTTOMLEFT" y="-16"/></Anchors>
         <Scripts>
           <OnLoad>_G[self:GetName().."Text"]:SetText("Show journal when targeting players")</OnLoad>
         </Scripts>
@@ -780,7 +780,7 @@
       </CheckButton>
       <Button name="$parentSave" inherits="UIPanelButtonTemplate" text="Save">
         <Size x="120" y="24"/>
-        <Anchors><Anchor point="TOPLEFT" relativeTo="$parentBioCount" relativePoint="BOTTOMLEFT" y="-12"/></Anchors>
+        <Anchors><Anchor point="TOPLEFT" relativeTo="$parentAutoShare" relativePoint="BOTTOMLEFT" y="-12"/></Anchors>
         <Scripts>
           <OnClick> if CharacterMemory_OptionsSave then CharacterMemory_OptionsSave() end </OnClick>
         </Scripts>
