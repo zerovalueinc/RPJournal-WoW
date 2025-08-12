@@ -1,0 +1,11 @@
+# Editor and local environment
+.vscode/
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+
