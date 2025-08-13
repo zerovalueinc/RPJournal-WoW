@@ -172,10 +172,19 @@ local function sendBioWhisper(toFullName)
   if not myGuid then return end
   -- Use player's own profile background as their public bio
   local me = CharacterMemoryDB and CharacterMemoryDB.entries and CharacterMemoryDB.entries[myGuid]
-  local bio = me and me.profile and me.profile.background or ""
+  local p = me and me.profile or {}
+  local ap = p and p.appearance or {}
+  local bio = p and p.background or ""
   bio = escapePipes(bio)
+  local function esc(v) return escapePipes(v or "") end
+  local payload = table.concat({
+    bio,
+    esc(p.title), esc(p.pronouns), esc(p.tags), esc(p.alias), esc(p.alignment),
+    esc(p.languages), esc(p.proficiencies),
+    esc(ap.age), esc(ap.height), esc(ap.weight), esc(ap.eyes), esc(ap.hair),
+  }, "|")
   if C_ChatInfo and C_ChatInfo.SendAddonMessage then
-    C_ChatInfo.SendAddonMessage(ADDON_MSG_PREFIX, "BIO|"..myGuid.."|"..bio, "WHISPER", toFullName)
+    C_ChatInfo.SendAddonMessage(ADDON_MSG_PREFIX, "BIO|"..myGuid.."|"..payload, "WHISPER", toFullName)
   end
 end
 
@@ -193,6 +202,14 @@ local function ensureOptionsPanelRegistered()
       Settings.RegisterAddOnCategory(category)
       _G.CM_OptionsCategory = category
     end
+    -- Register RP Bio as a subcategory under the main category (left nav child)
+    if _G.CM_OptionsCategory and _G.CM_BioPanel and not _G.CM_BioSubcategory then
+      -- Use the existing CM_BioPanel as the subpage canvas (hidden until selected)
+      local canvas = _G.CM_BioPanel
+      local sub = Settings.RegisterCanvasLayoutSubcategory(_G.CM_OptionsCategory, canvas, "RP Bio")
+      sub.ID = "CharacterMemoryBioSub"
+      _G.CM_BioSubcategory = sub
+    end
   elseif _G.InterfaceOptions_AddCategory then
     -- Classic/older
     _G.InterfaceOptions_AddCategory(_G.CM_OptionsPanel)
@@ -208,35 +225,36 @@ function CharacterMemory_OptionsOnShow()
   local e = guid and CharacterMemoryDB.entries[guid]
   local bio = (e and e.profile and (e.profile.publicBio or e.profile.background)) or ""
   if _G.CM_OptionsPanelBioEdit then _G.CM_OptionsPanelBioEdit:SetText(bio) end
-  if _G.CM_OptionsPanelTitleEdit then _G.CM_OptionsPanelTitleEdit:SetText((e and e.profile and e.profile.title) or "") end
-  if _G.CM_OptionsPanelPronounsEdit then _G.CM_OptionsPanelPronounsEdit:SetText((e and e.profile and e.profile.pronouns) or "") end
-  if _G.CM_OptionsPanelAlignmentEdit then _G.CM_OptionsPanelAlignmentEdit:SetText((e and e.profile and e.profile.alignment) or "") end
-  if _G.CM_OptionsPanelTagsEdit then _G.CM_OptionsPanelTagsEdit:SetText((e and e.profile and e.profile.tags) or "") end
-  if _G.CM_OptionsPanelAgeEdit then _G.CM_OptionsPanelAgeEdit:SetText((e and e.profile and e.profile.appearance and e.profile.appearance.age) or "") end
-  if _G.CM_OptionsPanelHeightEdit then _G.CM_OptionsPanelHeightEdit:SetText((e and e.profile and e.profile.appearance and e.profile.appearance.height) or "") end
-  if _G.CM_OptionsPanelWeightEdit then _G.CM_OptionsPanelWeightEdit:SetText((e and e.profile and e.profile.appearance and e.profile.appearance.weight) or "") end
-  if _G.CM_OptionsPanelEyesEdit then _G.CM_OptionsPanelEyesEdit:SetText((e and e.profile and e.profile.appearance and e.profile.appearance.eyes) or "") end
-  if _G.CM_OptionsPanelHairEdit then _G.CM_OptionsPanelHairEdit:SetText((e and e.profile and e.profile.appearance and e.profile.appearance.hair) or "") end
-  if _G.CM_OptionsPanelAliasEdit then _G.CM_OptionsPanelAliasEdit:SetText((e and e.profile and e.profile.alias) or "") end
-  if _G.CM_OptionsPanelLanguagesEdit then _G.CM_OptionsPanelLanguagesEdit:SetText((e and e.profile and e.profile.languages) or "") end
-  if _G.CM_OptionsPanelProficienciesEdit then _G.CM_OptionsPanelProficienciesEdit:SetText((e and e.profile and e.profile.proficiencies) or "") end
-  if _G.CM_OptionsPanelPersonalityEdit then _G.CM_OptionsPanelPersonalityEdit:SetText((e and e.profile and e.profile.personality) or "") end
-  if _G.CM_OptionsPanelIdealsEdit then _G.CM_OptionsPanelIdealsEdit:SetText((e and e.profile and e.profile.ideals) or "") end
-  if _G.CM_OptionsPanelBondsEdit then _G.CM_OptionsPanelBondsEdit:SetText((e and e.profile and e.profile.bonds) or "") end
-  if _G.CM_OptionsPanelFlawsEdit then _G.CM_OptionsPanelFlawsEdit:SetText((e and e.profile and e.profile.flaws) or "") end
-  if _G.CM_OptionsPanelHobbiesEdit then _G.CM_OptionsPanelHobbiesEdit:SetText((e and e.profile and e.profile.hobbies) or "") end
-  if _G.CM_OptionsPanelPreviewContent and _G.CM_OptionsPanelPreviewContentFS and _G.CM_OptionsPanelPreviewScroll then
-    _G.CM_OptionsPanelPreviewScroll:SetScrollChild(_G.CM_OptionsPanelPreviewContent)
-    _G.CM_OptionsPanelPreviewContentFS:SetText(bio)
-  end
-  if _G.CM_OptionsPanelBioCount and _G.CM_OptionsPanelBioCount.fs then
-    _G.CM_OptionsPanelBioCount.fs:SetText(string.format("%d chars", (bio and #bio) or 0))
+  if _G.CM_BioPanelBioEdit then _G.CM_BioPanelBioEdit:SetText(bio) end
+  -- Populate on the new Bio page when available
+  if _G.CM_BioPanelTitleEdit then _G.CM_BioPanelTitleEdit:SetText((e and e.profile and e.profile.title) or "") end
+  if _G.CM_BioPanelPronounsEdit then _G.CM_BioPanelPronounsEdit:SetText((e and e.profile and e.profile.pronouns) or "") end
+  if _G.CM_BioPanelAlignmentEdit then _G.CM_BioPanelAlignmentEdit:SetText((e and e.profile and e.profile.alignment) or "") end
+  if _G.CM_BioPanelTagsEdit then _G.CM_BioPanelTagsEdit:SetText((e and e.profile and e.profile.tags) or "") end
+  if _G.CM_BioPanelAgeEdit then _G.CM_BioPanelAgeEdit:SetText((e and e.profile and e.profile.appearance and e.profile.appearance.age) or "") end
+  if _G.CM_BioPanelHeightEdit then _G.CM_BioPanelHeightEdit:SetText((e and e.profile and e.profile.appearance and e.profile.appearance.height) or "") end
+  if _G.CM_BioPanelWeightEdit then _G.CM_BioPanelWeightEdit:SetText((e and e.profile and e.profile.appearance and e.profile.appearance.weight) or "") end
+  if _G.CM_BioPanelEyesEdit then _G.CM_BioPanelEyesEdit:SetText((e and e.profile and e.profile.appearance and e.profile.appearance.eyes) or "") end
+  if _G.CM_BioPanelHairEdit then _G.CM_BioPanelHairEdit:SetText((e and e.profile and e.profile.appearance and e.profile.appearance.hair) or "") end
+  if _G.CM_BioPanelAliasEdit then _G.CM_BioPanelAliasEdit:SetText((e and e.profile and e.profile.alias) or "") end
+  if _G.CM_BioPanelLanguagesEdit then _G.CM_BioPanelLanguagesEdit:SetText((e and e.profile and e.profile.languages) or "") end
+  if _G.CM_BioPanelProficienciesEdit then _G.CM_BioPanelProficienciesEdit:SetText((e and e.profile and e.profile.proficiencies) or "") end
+  if _G.CM_BioPanelPersonalityEdit then _G.CM_BioPanelPersonalityEdit:SetText((e and e.profile and e.profile.personality) or "") end
+  if _G.CM_BioPanelIdealsEdit then _G.CM_BioPanelIdealsEdit:SetText((e and e.profile and e.profile.ideals) or "") end
+  if _G.CM_BioPanelBondsEdit then _G.CM_BioPanelBondsEdit:SetText((e and e.profile and e.profile.bonds) or "") end
+  if _G.CM_BioPanelFlawsEdit then _G.CM_BioPanelFlawsEdit:SetText((e and e.profile and e.profile.flaws) or "") end
+  if _G.CM_BioPanelHobbiesEdit then _G.CM_BioPanelHobbiesEdit:SetText((e and e.profile and e.profile.hobbies) or "") end
+  -- Main page preview removed
+  -- Bio panel scroll child
+  if _G.CM_BioPanelScroll and _G.CM_BioPanelBioEdit then
+    _G.CM_BioPanelScroll:SetScrollChild(_G.CM_BioPanelBioEdit)
   end
   if _G.CM_OptionsPanelShowOnTarget then _G.CM_OptionsPanelShowOnTarget:SetChecked(CharacterMemoryDB.settings.showOnTarget and true or false) end
   if _G.CM_OptionsPanelShowBadges then _G.CM_OptionsPanelShowBadges:SetChecked((CharacterMemoryDB.settings.showBadges ~= false)) end
   if _G.CM_OptionsPanelEnableInspect then _G.CM_OptionsPanelEnableInspect:SetChecked((CharacterMemoryDB.settings.enableInspect ~= false)) end
   if _G.CM_OptionsPanelEnableProximity then _G.CM_OptionsPanelEnableProximity:SetChecked((CharacterMemoryDB.settings.enableProximity ~= false)) end
   if _G.CM_OptionsPanelAutoShare then _G.CM_OptionsPanelAutoShare:SetChecked((CharacterMemoryDB.settings.shareEnabled == true)) end
+  -- Do not force tab swap here; Bio subpage calls this too
 end
 
 function CharacterMemory_OptionsSave()
@@ -257,35 +275,37 @@ function CharacterMemory_OptionsSave()
     local e = CharacterMemoryDB.entries[guid] or { profile = {} }
     e.profile = e.profile or {}
     e.profile.appearance = e.profile.appearance or {}
-    if _G.CM_OptionsPanelBioEdit then
-      local text = _G.CM_OptionsPanelBioEdit:GetText() or ""
+    do
+      local text = ""
+      if _G.CM_BioPanelBioEdit and _G.CM_BioPanelBioEdit.GetText then
+        text = _G.CM_BioPanelBioEdit:GetText() or ""
+      elseif _G.CM_OptionsPanelBioEdit and _G.CM_OptionsPanelBioEdit.GetText then
+        text = _G.CM_OptionsPanelBioEdit:GetText() or ""
+      end
       -- Mirror user's authored RP Bio into both fields: background (for local profile)
       -- and publicBio (for sharing/preview by other users)
       e.profile.background = text
       e.profile.publicBio = text
     end
     -- Save identity fields
-    if _G.CM_OptionsPanelTitleEdit then e.profile.title = _G.CM_OptionsPanelTitleEdit:GetText() or "" end
-    if _G.CM_OptionsPanelPronounsEdit then e.profile.pronouns = _G.CM_OptionsPanelPronounsEdit:GetText() or "" end
-    if _G.CM_OptionsPanelAlignmentEdit then e.profile.alignment = _G.CM_OptionsPanelAlignmentEdit:GetText() or "" end
-    if _G.CM_OptionsPanelTagsEdit then e.profile.tags = _G.CM_OptionsPanelTagsEdit:GetText() or "" end
-    if _G.CM_OptionsPanelAgeEdit then e.profile.appearance.age = _G.CM_OptionsPanelAgeEdit:GetText() or "" end
-    if _G.CM_OptionsPanelHeightEdit then e.profile.appearance.height = _G.CM_OptionsPanelHeightEdit:GetText() or "" end
-    if _G.CM_OptionsPanelWeightEdit then e.profile.appearance.weight = _G.CM_OptionsPanelWeightEdit:GetText() or "" end
-    if _G.CM_OptionsPanelEyesEdit then e.profile.appearance.eyes = _G.CM_OptionsPanelEyesEdit:GetText() or "" end
-    if _G.CM_OptionsPanelHairEdit then e.profile.appearance.hair = _G.CM_OptionsPanelHairEdit:GetText() or "" end
-    if _G.CM_OptionsPanelAliasEdit then e.profile.alias = _G.CM_OptionsPanelAliasEdit:GetText() or "" end
-    if _G.CM_OptionsPanelLanguagesEdit then e.profile.languages = _G.CM_OptionsPanelLanguagesEdit:GetText() or "" end
-    if _G.CM_OptionsPanelProficienciesEdit then e.profile.proficiencies = _G.CM_OptionsPanelProficienciesEdit:GetText() or "" end
-    if _G.CM_OptionsPanelPersonalityEdit then e.profile.personality = _G.CM_OptionsPanelPersonalityEdit:GetText() or "" end
-    if _G.CM_OptionsPanelIdealsEdit then e.profile.ideals = _G.CM_OptionsPanelIdealsEdit:GetText() or "" end
-    if _G.CM_OptionsPanelBondsEdit then e.profile.bonds = _G.CM_OptionsPanelBondsEdit:GetText() or "" end
-    if _G.CM_OptionsPanelFlawsEdit then e.profile.flaws = _G.CM_OptionsPanelFlawsEdit:GetText() or "" end
-    if _G.CM_OptionsPanelHobbiesEdit then e.profile.hobbies = _G.CM_OptionsPanelHobbiesEdit:GetText() or "" end
-    if _G.CM_OptionsPanelTitleEdit then e.profile.title = _G.CM_OptionsPanelTitleEdit:GetText() or "" end
-    if _G.CM_OptionsPanelPronounsEdit then e.profile.pronouns = _G.CM_OptionsPanelPronounsEdit:GetText() or "" end
-    if _G.CM_OptionsPanelAlignmentEdit then e.profile.alignment = _G.CM_OptionsPanelAlignmentEdit:GetText() or "" end
-    if _G.CM_OptionsPanelTagsEdit then e.profile.tags = _G.CM_OptionsPanelTagsEdit:GetText() or "" end
+    -- Prefer values from Bio page if present
+    if _G.CM_BioPanelTitleEdit then e.profile.title = _G.CM_BioPanelTitleEdit:GetText() or "" end
+    if _G.CM_BioPanelPronounsEdit then e.profile.pronouns = _G.CM_BioPanelPronounsEdit:GetText() or "" end
+    if _G.CM_BioPanelAlignmentEdit then e.profile.alignment = _G.CM_BioPanelAlignmentEdit:GetText() or "" end
+    if _G.CM_BioPanelTagsEdit then e.profile.tags = _G.CM_BioPanelTagsEdit:GetText() or "" end
+    if _G.CM_BioPanelAgeEdit then e.profile.appearance.age = _G.CM_BioPanelAgeEdit:GetText() or "" end
+    if _G.CM_BioPanelHeightEdit then e.profile.appearance.height = _G.CM_BioPanelHeightEdit:GetText() or "" end
+    if _G.CM_BioPanelWeightEdit then e.profile.appearance.weight = _G.CM_BioPanelWeightEdit:GetText() or "" end
+    if _G.CM_BioPanelEyesEdit then e.profile.appearance.eyes = _G.CM_BioPanelEyesEdit:GetText() or "" end
+    if _G.CM_BioPanelHairEdit then e.profile.appearance.hair = _G.CM_BioPanelHairEdit:GetText() or "" end
+    if _G.CM_BioPanelAliasEdit then e.profile.alias = _G.CM_BioPanelAliasEdit:GetText() or "" end
+    if _G.CM_BioPanelLanguagesEdit then e.profile.languages = _G.CM_BioPanelLanguagesEdit:GetText() or "" end
+    if _G.CM_BioPanelProficienciesEdit then e.profile.proficiencies = _G.CM_BioPanelProficienciesEdit:GetText() or "" end
+    if _G.CM_BioPanelPersonalityEdit then e.profile.personality = _G.CM_BioPanelPersonalityEdit:GetText() or "" end
+    if _G.CM_BioPanelIdealsEdit then e.profile.ideals = _G.CM_BioPanelIdealsEdit:GetText() or "" end
+    if _G.CM_BioPanelBondsEdit then e.profile.bonds = _G.CM_BioPanelBondsEdit:GetText() or "" end
+    if _G.CM_BioPanelFlawsEdit then e.profile.flaws = _G.CM_BioPanelFlawsEdit:GetText() or "" end
+    if _G.CM_BioPanelHobbiesEdit then e.profile.hobbies = _G.CM_BioPanelHobbiesEdit:GetText() or "" end
     -- Ensure player's own entry has core identity for list/profile
     e.isPlayer = true
     local name, realm = UnitName("player")
@@ -316,13 +336,27 @@ function CharacterMemory_OptionsClearSelected()
 end
 
 function CharacterMemory_OptionsOnBioChanged(editBox)
-  if _G.CM_OptionsPanelPreviewContent and _G.CM_OptionsPanelPreviewContentFS then
-    _G.CM_OptionsPanelPreviewScroll:SetScrollChild(_G.CM_OptionsPanelPreviewContent)
-    _G.CM_OptionsPanelPreviewContentFS:SetText(editBox:GetText() or "")
-  end
+  -- Only used on the Bio page now; char count there uses same name if needed
   if _G.CM_OptionsPanelBioCount and _G.CM_OptionsPanelBioCount.fs then
     _G.CM_OptionsPanelBioCount.fs:SetText(string.format("%d chars", #(editBox:GetText() or "")))
   end
+end
+
+-- Simple tab switcher for the settings canvas
+function CharacterMemory_OptionsTabSwap(which)
+  local generalVisible = (which == "General")
+  -- Guard missing nodes during load; toggle the entire group
+  if _G.CM_OptionsPanelPrefsHeader then _G.CM_OptionsPanelPrefsHeader:SetShown(generalVisible) end
+  if _G.CM_OptionsPanelGeneralGroup then _G.CM_OptionsPanelGeneralGroup:SetShown(generalVisible) end
+  -- Footer buttons are shared across tabs; always show
+
+  local bioVisible = (which == "Bio")
+  if _G.CM_BioPanel then _G.CM_BioPanel:SetShown(bioVisible) end
+  -- Toggle tab button enabled states for feedback
+  local tabG = _G.CM_OptionsPanelTabBarTabGeneral
+  local tabB = _G.CM_OptionsPanelTabBarTabBio
+  if tabG and tabG.Disable and tabG.Enable then if generalVisible then tabG:Disable() else tabG:Enable() end end
+  if tabB and tabB.Disable and tabB.Enable then if bioVisible then tabB:Disable() else tabB:Enable() end end
 end
 
 function CharacterMemory_OptionsPublish()
@@ -1595,13 +1629,34 @@ local function onAddonMessage(prefix, message, channel, sender)
     sendBioWhisper(sender)
   elseif tag == "BIO" then
     local guid = a and a ~= "" and a or nil
-    local bio = unescapePipes(b)
+    -- Split remaining payload fields by pipe
+    local parts = {}
+    if b and b ~= "" then for s in string.gmatch(b, "([^|]*)|?") do if s == nil then break end table.insert(parts, s) end end
+    local function part(i) return unescapePipes(parts[i] or "") end
+    local bio = part(1)
+    local title, pronouns, tags, alias, alignment = part(2), part(3), part(4), part(5), part(6)
+    local languages, proficiencies = part(7), part(8)
+    local age, height, weight, eyes, hair = part(9), part(10), part(11), part(12), part(13)
     if guid and bio then
       CharacterMemoryDB.entries = CharacterMemoryDB.entries or {}
       local e = CharacterMemoryDB.entries[guid] or { profile = {} }
       e.profile = e.profile or {}
       -- Store received bio into publicBio field
       e.profile.publicBio = bio
+      -- Also hydrate identity/details for display if provided
+      if title ~= "" then e.profile.title = title end
+      if pronouns ~= "" then e.profile.pronouns = pronouns end
+      if tags ~= "" then e.profile.tags = tags end
+      if alias ~= "" then e.profile.alias = alias end
+      if alignment ~= "" then e.profile.alignment = alignment end
+      if languages ~= "" then e.profile.languages = languages end
+      if proficiencies ~= "" then e.profile.proficiencies = proficiencies end
+      e.profile.appearance = e.profile.appearance or {}
+      if age ~= "" then e.profile.appearance.age = age end
+      if height ~= "" then e.profile.appearance.height = height end
+      if weight ~= "" then e.profile.appearance.weight = weight end
+      if eyes ~= "" then e.profile.appearance.eyes = eyes end
+      if hair ~= "" then e.profile.appearance.hair = hair end
       CharacterMemoryDB.entries[guid] = e
       CharacterMemory_UpdateUI()
     end

@@ -806,6 +806,16 @@ function CMJ.PopulateDetail(id)
     R.profEB:SetText(p.proficiencies or "")
     R.aliasEB:SetText(p.alias or "")
     R.alignEB:SetText(p.alignment or "")
+    -- XML-provided Request Bio button is wired below
+    -- Wire Request Bio button from XML
+    if _G.CMJ_RootXMLPageRProfileRequestBtn and not _G.CMJ_RootXMLPageRProfileRequestBtn._wired then
+      _G.CMJ_RootXMLPageRProfileRequestBtn._wired = true
+      _G.CMJ_RootXMLPageRProfileRequestBtn:SetScript("OnClick", function()
+        if e and e.name and _G.CharacterMemory_RequestBioFrom then
+          _G.CharacterMemory_RequestBioFrom(e.name)
+        end
+      end)
+    end
     if R.saveBtn and not R.saveBtn._wired then
       R.saveBtn._wired = true
       R.saveBtn:SetScript("OnClick", function()
