@@ -866,6 +866,9 @@ function getOrCreateEntry(guid)
   return e
 end
 
+-- Expose for achievements module
+_G.CharacterMemory_GetOrCreateEntry = getOrCreateEntry
+
 local function deleteEntry(guid)
   if guid and CharacterMemoryDB.entries[guid] then
     CharacterMemoryDB.entries[guid] = nil
@@ -881,6 +884,20 @@ end
 
 local function refreshRelationship(entry)
   entry.level = computeLevelFromXP(entry.xp)
+  
+  -- Hard requirement: Strangers need 3 completed achievements to become Acquaintances
+  if entry.level == 1 then
+    local achievementSummary = _G.CharacterMemory_GetAchievementSummary and _G.CharacterMemory_GetAchievementSummary(entry.guid or "")
+    local completedAchievements = achievementSummary and achievementSummary.done or 0
+    
+    if completedAchievements < 3 then
+      -- Force them to stay at level 0 (Stranger) until they complete 3 achievements
+      entry.level = 0
+      entry.tier = "Stranger"
+      return
+    end
+  end
+  
   entry.tier = computeTierFromLevel(entry.level)
 end
 
@@ -904,92 +921,7 @@ local function ensureStats(entry)
   return s
 end
 
--- Achievement catalog and APIs
-local CM_AchievementDefs = {
-  {id="first_meet",        name="First Impression",   desc="First time you met.",                        goal=1,   kind="stat",       path="firstMeets",         rewardXP=50},
-  {id="first_kiss",        name="First Kiss",         desc="Share a kiss emote.",                        goal=1,   kind="emote",      emote="kiss",              rewardXP=30},
-  {id="show_affection",    name="Shows of Affection", desc="Express love.",                              goal=1,   kind="emote",      emote="love",              rewardXP=20},
-  {id="hug_weekly_10",     name="Hug Buddy",          desc="Hug them 10 times in 7 days.",               goal=10,  kind="emote_weekly",emote="hug",  days=7, rewardXP=50, repeatable=true, periodDays=7},
-  {id="dungeon_crawler",   name="Dungeon Crawler",    desc="Complete a dungeon together.",               goal=1,   kind="stat",       path="dungeonCompletions", rewardXP=80},
-  {id="pvp_partner",       name="Battle Buddy",       desc="Play 5 PvP matches together.",               goal=5,   kind="sumstats",   paths={"pvpMatches","arenaMatches"}, rewardXP=100},
-  {id="duelists",          name="Dueling Duo",        desc="Duel 3 times.",                              goal=3,   kind="stat",       path="duels",              rewardXP=40},
-  {id="whisperer",         name="Whisper Network",    desc="Exchange 10 whispers.",                      goal=10,  kind="stat",       path="whispers",          rewardXP=25},
-  {id="tavern_buddies",    name="Tavern Buddies",     desc="Hang out in taverns 5 times.",               goal=5,   kind="stat",       path="tavernTicks",       rewardXP=25},
-  {id="group_time_30m",    name="Quality Time",       desc="Spend 30 minutes grouped.",                  goal=1800,kind="stat",       path="groupSeconds",      rewardXP=60, valueIsSeconds=true},
-  {id="raid_bond",         name="Raid Bond",          desc="Kill a raid boss together.",                 goal=1,   kind="stat",       path="bossKillsRaid",     rewardXP=120},
-  {id="arena_team",        name="Arena Team",         desc="Fight 3 arena matches together.",            goal=3,   kind="stat",       path="arenaMatches",      rewardXP=90},
-}
-
-function CharacterMemory_GetAchievements(guid)
-  local e = getOrCreateEntry(guid); if not e then return {} end
-  local s = ensureStats(e)
-  e.ach = e.ach or { claimed = {}, history = { emotes = {} } }
-  e.ach.claimed = e.ach.claimed or {}
-  e.ach.history = e.ach.history or { emotes = {} }
-  e.ach.history.emotes = e.ach.history.emotes or {}
-  local out = {}
-  local now = time()
-  for _,def in ipairs(CM_AchievementDefs) do
-    local cur = 0
-    if def.kind=="stat" then
-      cur = s[def.path] or 0
-    elseif def.kind=="sumstats" then
-      for _,p in ipairs(def.paths or {}) do cur = cur + (s[p] or 0) end
-    elseif def.kind=="emote" then
-      local arr = e.ach.history.emotes[def.emote] or {}; cur = #arr
-    elseif def.kind=="emote_weekly" then
-      local arr = e.ach.history.emotes[def.emote] or {}
-      local cutoff = now - (def.days or 7)*86400
-      local cnt=0; for _,t in ipairs(arr) do if t>=cutoff then cnt=cnt+1 end end
-      cur = cnt
-    end
-    local done = cur >= def.goal
-    local claimedAt = e.ach.claimed[def.id]
-    local claimable = false
-    if done then
-      if def.repeatable then
-        local cutoffClaim = now - (def.periodDays or 7)*86400
-        claimable = (not claimedAt) or (claimedAt < cutoffClaim)
-      else
-        claimable = not claimedAt
-      end
-    end
-    table.insert(out, {
-      id=def.id, name=def.name, desc=def.desc, cur=cur, goal=def.goal,
-      done=done, claimable=claimable, claimedAt=claimedAt, rewardXP=def.rewardXP, valueIsSeconds=def.valueIsSeconds
-    })
-  end
-  return out
-end
-
-function CharacterMemory_ClaimAchievement(guid, id)
-  local e = getOrCreateEntry(guid); if not e then return end
-  local list = CharacterMemory_GetAchievements(guid)
-  local sel = nil
-  for _,a in ipairs(list) do if a.id == id then sel = a; break end end
-  if not sel or not sel.claimable then return end
-  awardXP(guid, sel.rewardXP or 0, "achievement:"..id)
-  e.ach = e.ach or {}; e.ach.claimed = e.ach.claimed or {}
-  e.ach.claimed[id] = time()
-  printMessage(("Achievement unlocked: %s +%d XP"):format(sel.name or id, sel.rewardXP or 0))
-  if _G.CMJ and _G.CMJ.NotifyDataChanged then _G.CMJ.NotifyDataChanged() end
-end
-
--- Achievement emote history tracker (per-target, pruned to last 7 days)
-local function CM_LogEmoteForAchievements(guid, emoteKey)
-  if not guid or not emoteKey then return end
-  local e = getOrCreateEntry(guid); if not e then return end
-  e.ach = e.ach or {}; e.ach.history = e.ach.history or {}; e.ach.history.emotes = e.ach.history.emotes or {}
-  local tbl = e.ach.history.emotes
-  tbl[emoteKey] = tbl[emoteKey] or {}
-  local now = time()
-  table.insert(tbl[emoteKey], now)
-  -- prune to last 7 days
-  local cutoff = now - 7*24*60*60
-  local pruned = {}
-  for _, t in ipairs(tbl[emoteKey]) do if t >= cutoff then table.insert(pruned, t) end end
-  tbl[emoteKey] = pruned
-end
+-- Achievements are defined and exposed from CM_Achievements.lua
 
 local function incStat(guid, key, amount)
   local e = getOrCreateEntry(guid)
@@ -1000,15 +932,48 @@ end
 
 local function toastXP(entry, amount, reason)
   if not entry or not entry.isPlayer then return end
-  -- OPT: Avoid multiple concatenations; use format
-  printMessage(string_format("%s: +%d XP (%s) — Lv %d (%s)", shortName(entry.name), amount, reason or "", entry.level, entry.tier))
+  -- Only notify on level-ups (rank ups), not every XP award. Detect a level change
+  -- by comparing computed level from XP before and after inside awardXP.
+  if entry._justRankedUp then
+    local message = string_format("%s: Rank up! Lv %d (%s)", shortName(entry.name), entry.level, entry.tier)
+    printMessage(message)
+    entry._justRankedUp = nil
+  end
 end
 
 function awardXP(guid, amount, reason)
   local entry = getOrCreateEntry(guid)
   if not entry or not amount or amount <= 0 then return end
+  local beforeLevel = entry.level or computeLevelFromXP(entry.xp or 0)
   entry.xp = (entry.xp or 0) + amount
+  
+  -- Compute what the level would be without the achievement requirement
+  local computedLevel = computeLevelFromXP(entry.xp)
+  local wouldHaveRankedUp = computedLevel > beforeLevel
+  
   refreshRelationship(entry)
+  local afterLevel = entry.level
+  
+  -- Check if they were blocked by achievement requirement
+  local wasBlocked = false
+  if wouldHaveRankedUp and afterLevel == beforeLevel then
+    -- They would have ranked up but didn't - check if it's due to achievement requirement
+    local achievementSummary = _G.CharacterMemory_GetAchievementSummary and _G.CharacterMemory_GetAchievementSummary(guid)
+    local completedAchievements = achievementSummary and achievementSummary.done or 0
+    
+    if completedAchievements < 3 then
+      wasBlocked = true
+      -- Show a helpful message about the requirement
+      local message = string_format("%s: Need 3 achievements to rank up! (%d/3 completed)", 
+        shortName(entry.name), completedAchievements)
+      printMessage(message)
+    end
+  end
+  
+  if wouldHaveRankedUp and not wasBlocked then
+    entry._justRankedUp = true
+  end
+  
   -- update UI if this is the active target
   if State.currentGUID == guid then CharacterMemory_UpdateUI() end
   if _G.CMJ and _G.CMJ.NotifyDataChanged then _G.CMJ.NotifyDataChanged() end
@@ -1097,6 +1062,34 @@ end
 -- Track one-time awards to avoid double-credit inside the same encounter/session
 local AwardedEncounters = {} -- [guid] = { [encounterID] = true }
 
+-- Track a simple dungeon run state for non-LFG 5-man dungeons so we can
+-- credit "Dungeons" on exit even when LFG-specific events don't fire.
+local DungeonRun = {
+  active = false,        -- we killed at least one boss in a 5-man instance this run
+  instanceID = nil,      -- GetInstanceInfo() instanceID captured when we first succeed a boss
+  lastBossKillAt = 0,    -- time of the most recent successful boss
+  credited = false       -- whether we already counted a completion for this run
+}
+
+local function resetDungeonRun()
+  DungeonRun.active, DungeonRun.instanceID, DungeonRun.lastBossKillAt, DungeonRun.credited = false, nil, 0, false
+end
+
+local function maybeCreditDungeonOnExit()
+  -- If we recently killed a boss in a 5-man and we leave the instance without
+  -- seeing LFG/Scenario/Challenge completion events, count a completion once.
+  if not DungeonRun.active or DungeonRun.credited then return end
+  local now = GetTime and GetTime() or 0
+  if (now - (DungeonRun.lastBossKillAt or 0)) > 900 then -- safety window 15m
+    resetDungeonRun()
+    return
+  end
+  awardToAllGroupmates(100, "dungeon complete")
+  incStatForAllGroupmates("dungeonCompletions", 1)
+  DungeonRun.credited = true
+  resetDungeonRun()
+end
+
 local function isInInstanceOfTypes(types)
   local inInstance, instType = IsInInstance()
   if not inInstance then return false end
@@ -1106,11 +1099,72 @@ local function isInInstanceOfTypes(types)
   return false
 end
 
+-- Iterate current group's member GUIDs (excluding the player) and invoke a callback
+local function forEachGroupmateGUID(callback)
+  if type(callback) ~= "function" then return end
+  if IsInRaid() then
+    for i = 1, GetNumGroupMembers() do
+      local unit = "raid" .. i
+      if UnitExists(unit) and not UnitIsUnit(unit, "player") then
+        local guid = UnitGUID(unit)
+        if guid then callback(guid, unit) end
+      end
+    end
+  elseif IsInGroup() then
+    for i = 1, GetNumSubgroupMembers() do
+      local unit = "party" .. i
+      if UnitExists(unit) and not UnitIsUnit(unit, "player") then
+        local guid = UnitGUID(unit)
+        if guid then callback(guid, unit) end
+      end
+    end
+  end
+end
+
+local function awardToAllGroupmates(amount, reason)
+  if not amount or amount <= 0 then return end
+  forEachGroupmateGUID(function(guid)
+    awardXP(guid, amount, reason)
+  end)
+end
+
+local function incStatForAllGroupmates(key, amount)
+  forEachGroupmateGUID(function(guid)
+    incStat(guid, key, amount or 1)
+  end)
+end
+
 local function awardIfTargetGroupmate(amount, reason)
   if not State.currentGUID then return end
   if not UnitExists("target") or not UnitIsPlayer("target") then return end
   if not isCurrentTargetGroupmate() then return end
   awardXP(State.currentGUID, amount, reason)
+end
+
+-- Find a current groupmate by short name and return their GUID (and unit token)
+local function getGroupmateGUIDByName(name)
+  if not name or name == "" then return nil, nil end
+  local targetShort = shortName(name)
+  if IsInRaid() then
+    for i = 1, GetNumGroupMembers() do
+      local unit = "raid" .. i
+      if UnitExists(unit) then
+        local n, r = UnitName(unit)
+        local full = r and (n .. "-" .. r) or n
+        if shortName(full) == targetShort then return UnitGUID(unit), unit end
+      end
+    end
+  elseif IsInGroup() then
+    for i = 1, GetNumSubgroupMembers() do
+      local unit = "party" .. i
+      if UnitExists(unit) then
+        local n, r = UnitName(unit)
+        local full = r and (n .. "-" .. r) or n
+        if shortName(full) == targetShort then return UnitGUID(unit), unit end
+      end
+    end
+  end
+  return nil, nil
 end
 
 local function handleTargetChanged()
@@ -1201,6 +1255,7 @@ end
 
 -- CHAT_MSG_TEXT_EMOTE: positive emotes
 local function handleTextEmote(event, text, playerName)
+  -- Emotes are target/proximity based (no group required), but must be tied to current target
   if not State.currentGUID then return end
   local entry = CharacterMemoryDB.entries[State.currentGUID]
   if not entry or not entry.isPlayer then return end
@@ -1222,13 +1277,14 @@ local function handleTextEmote(event, text, playerName)
     -- Track per-emote history for achievements regardless of cooldown
     local tl = matched and matched:lower() or ""
     if tl == "hug" or tl == "kiss" or tl == "love" then
-      CM_LogEmoteForAchievements(State.currentGUID, tl)
+      if _G.CM_LogEmoteForAchievements then pcall(_G.CM_LogEmoteForAchievements, State.currentGUID, tl) end
     end
   end
 end
 
 -- Whisper exchange
 local function handleWhisper(event, text, otherName)
+  -- Whispers are target-based (no group required)
   if not State.currentGUID then return end
   local entry = CharacterMemoryDB.entries[State.currentGUID]
   if not entry or not entry.isPlayer then return end
@@ -1243,6 +1299,7 @@ end
 
 -- Trade
 local function handleTradeClosed()
+  -- Trades are target-based (no group required)
   if not State.currentGUID then return end
   local e = CharacterMemoryDB.entries[State.currentGUID]
   if not e or not e.isPlayer then return end
@@ -1252,6 +1309,7 @@ end
 
 -- Duel
 local function handleDuelFinished()
+  -- Duels are target-based (no group required)
   if not State.currentGUID then return end
   local e = CharacterMemoryDB.entries[State.currentGUID]
   if not e or not e.isPlayer then return end
@@ -1261,46 +1319,46 @@ end
 
 -- Group tick (every 300s)
 local function groupTick()
-  if not State.currentGUID then return end
-  if not isCurrentTargetGroupmate() then return end
-  if canFireCooldown(Cooldowns.groupTick, State.currentGUID, 300) then
-    awardXP(State.currentGUID, 25, "group time")
-    incStat(State.currentGUID, "groupTicks", 1)
-    -- accumulate grouped seconds
-    local e = getOrCreateEntry(State.currentGUID)
-    if e then
-      e.stats = ensureStats(e)
-      local now = GetTime()
-      if GroupSessionStartAt == 0 then GroupSessionStartAt = now end
-      e.stats.groupSeconds = (e.stats.groupSeconds or 0) + 300
-    end
-    -- bump a one-time session counter for being grouped at least once
-    if not GroupSessionCounted[State.currentGUID] then
-      GroupSessionCounted[State.currentGUID] = true
-      if IsInRaid() then
-        incStat(State.currentGUID, "raids", 1)
-      else
-        incStat(State.currentGUID, "parties", 1)
+  -- Credit all current groupmates every 5 minutes
+  forEachGroupmateGUID(function(guid)
+    if canFireCooldown(Cooldowns.groupTick, guid, 300) then
+      awardXP(guid, 25, "group time")
+      incStat(guid, "groupTicks", 1)
+      local e = getOrCreateEntry(guid)
+      if e then
+        e.stats = ensureStats(e)
+        local now = GetTime()
+        if GroupSessionStartAt == 0 then GroupSessionStartAt = now end
+        e.stats.groupSeconds = (e.stats.groupSeconds or 0) + 300
+      end
+      if not GroupSessionCounted[guid] then
+        GroupSessionCounted[guid] = true
+        if IsInRaid() then
+          incStat(guid, "raids", 1)
+        else
+          incStat(guid, "parties", 1)
+        end
       end
     end
-  end
+  end)
 end
 
 -- Tavern tick (every 120s) while resting and target exists and is player
 local function tavernTick()
-  if not State.currentGUID then return end
-  if not UnitExists("target") then return end
-  if not UnitIsPlayer("target") then return end
-  if IsResting() and canFireCooldown(Cooldowns.tavernTick, State.currentGUID, 120) then
-    awardXP(State.currentGUID, 20, "tavern")
-    incStat(State.currentGUID, "tavernTicks", 1)
-  end
+  -- Award only when resting and with nearby groupmates (roughly within interact range)
+  if not IsResting() then return end
+  forEachGroupmateGUID(function(guid, unit)
+    local nearby = false
+    if CheckInteractDistance then nearby = CheckInteractDistance(unit, 1) and true or false end -- ~28 yards
+    if nearby and canFireCooldown(Cooldowns.tavernTick, guid, 120) then
+      awardXP(guid, 20, "tavern")
+      incStat(guid, "tavernTicks", 1)
+    end
+  end)
 end
 
 -- Instance group tick (every 120s) while in dungeon/raid/bg/arena with target groupmate
 local function instanceGroupTick()
-  if not State.currentGUID then return end
-  if not isCurrentTargetGroupmate() then return end
   local inInstance, instType = IsInInstance()
   if not inInstance then return end
   local amount = 0
@@ -1308,72 +1366,81 @@ local function instanceGroupTick()
   elseif instType == "raid" then amount = 20
   elseif instType == "pvp" then amount = 12
   elseif instType == "arena" then amount = 18 end
-  if amount > 0 and canFireCooldown(Cooldowns.instanceGroupTick, State.currentGUID, 120) then
-    awardXP(State.currentGUID, amount, "instance time")
-    if instType == "party" then incStat(State.currentGUID, "instanceTicks_party", 1)
-    elseif instType == "raid" then incStat(State.currentGUID, "instanceTicks_raid", 1)
-    elseif instType == "pvp" then incStat(State.currentGUID, "instanceTicks_pvp", 1)
-    elseif instType == "arena" then incStat(State.currentGUID, "instanceTicks_arena", 1) end
-  end
+  if amount <= 0 then return end
+  forEachGroupmateGUID(function(guid)
+    if canFireCooldown(Cooldowns.instanceGroupTick, guid, 120) then
+      awardXP(guid, amount, "instance time")
+      if instType == "party" then incStat(guid, "instanceTicks_party", 1)
+      elseif instType == "raid" then incStat(guid, "instanceTicks_raid", 1)
+      elseif instType == "pvp" then incStat(guid, "instanceTicks_pvp", 1)
+      elseif instType == "arena" then incStat(guid, "instanceTicks_arena", 1) end
+    end
+  end)
 end
 
 -- Boss kills and completions
 local function handleEncounterEnd(encounterID, encounterName, difficultyID, raidSize, endStatus)
   if endStatus ~= 1 then return end -- only on success
-  if not State.currentGUID then return end
-  AwardedEncounters[State.currentGUID] = AwardedEncounters[State.currentGUID] or {}
-  if AwardedEncounters[State.currentGUID][encounterID] then return end
-  AwardedEncounters[State.currentGUID][encounterID] = true
   local inInstance, instType = IsInInstance()
   if not inInstance then return end
-  if instType == "party" then
-    awardIfTargetGroupmate(40, "boss kill")
-    incStat(State.currentGUID, "bossKillsDungeon", 1)
-  elseif instType == "raid" then
-    awardIfTargetGroupmate(80, "boss kill")
-    incStat(State.currentGUID, "bossKillsRaid", 1)
-  end
+  -- Credit all current groupmates once per encounterID
+  forEachGroupmateGUID(function(guid)
+    AwardedEncounters[guid] = AwardedEncounters[guid] or {}
+    if not AwardedEncounters[guid][encounterID] then
+      AwardedEncounters[guid][encounterID] = true
+      if instType == "party" then
+        awardXP(guid, 40, "boss kill")
+        incStat(guid, "bossKillsDungeon", 1)
+        -- Mark that we have an active dungeon run with at least one boss kill
+        DungeonRun.active = true
+        DungeonRun.lastBossKillAt = GetTime and GetTime() or 0
+        DungeonRun.instanceID = select(8, GetInstanceInfo())
+      elseif instType == "raid" then
+        awardXP(guid, 80, "boss kill")
+        incStat(guid, "bossKillsRaid", 1)
+      end
+    end
+  end)
 end
 
 -- Wipe tracking
 local function handleEncounterStart(encounterID)
-  if not State.currentGUID then return end
-  AwardedEncounters[State.currentGUID] = AwardedEncounters[State.currentGUID] or {}
-  AwardedEncounters[State.currentGUID][encounterID] = AwardedEncounters[State.currentGUID][encounterID] or false
+  forEachGroupmateGUID(function(guid)
+    AwardedEncounters[guid] = AwardedEncounters[guid] or {}
+    AwardedEncounters[guid][encounterID] = AwardedEncounters[guid][encounterID] or false
+  end)
 end
 
 local function handleEncounterEndAny(encounterID, encounterName, difficultyID, raidSize, endStatus)
-  if not State.currentGUID then return end
   if endStatus ~= 1 then
-    incStat(State.currentGUID, "wipesWith", 1)
+    incStatForAllGroupmates("wipesWith", 1)
   end
 end
 
 local function handleLFGCompletion()
-  awardIfTargetGroupmate(100, "dungeon complete")
-  incStat(State.currentGUID, "dungeonCompletions", 1)
+  awardToAllGroupmates(100, "dungeon complete")
+  incStatForAllGroupmates("dungeonCompletions", 1)
 end
 
 local function handleChallengeModeCompleted()
-  awardIfTargetGroupmate(120, "mythic+ complete")
-  incStat(State.currentGUID, "mplusCompletions", 1)
+  awardToAllGroupmates(120, "mythic+ complete")
+  incStatForAllGroupmates("mplusCompletions", 1)
 end
 
 local function handleScenarioCompleted()
-  awardIfTargetGroupmate(60, "scenario complete")
-  incStat(State.currentGUID, "scenarioCompletions", 1)
+  awardToAllGroupmates(60, "scenario complete")
+  incStatForAllGroupmates("scenarioCompletions", 1)
 end
 
 local function handlePvpMatchComplete()
   local inInstance, instType = IsInInstance()
   if not inInstance then return end
   if instType == "pvp" then
-    awardIfTargetGroupmate(40, "battleground match")
-    incStat(State.currentGUID, "pvpMatches", 1)
-    -- Win/Loss heuristic not easily available; leave for future API hook
+    awardToAllGroupmates(40, "battleground match")
+    incStatForAllGroupmates("pvpMatches", 1)
   elseif instType == "arena" then
-    awardIfTargetGroupmate(50, "arena match")
-    incStat(State.currentGUID, "arenaMatches", 1)
+    awardToAllGroupmates(50, "arena match")
+    incStatForAllGroupmates("arenaMatches", 1)
   end
 end
 
@@ -1568,12 +1635,15 @@ evt:SetScript("OnEvent", function(self, event, ...)
 
   elseif event == "LFG_COMPLETION_REWARD" then
     handleLFGCompletion()
+    resetDungeonRun()
 
   elseif event == "CHALLENGE_MODE_COMPLETED" then
     handleChallengeModeCompleted()
+    resetDungeonRun()
 
   elseif event == "SCENARIO_COMPLETED" then
     handleScenarioCompleted()
+    resetDungeonRun()
 
   elseif event == "PVP_MATCH_COMPLETE" or event == "BATTLEFIELDS_CLOSED" then
     handlePvpMatchComplete()
@@ -1621,6 +1691,9 @@ evt:SetScript("OnEvent", function(self, event, ...)
   elseif event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" or event == "ZONE_CHANGED_NEW_AREA" then
     -- OPT: Refresh zone cache quickly on zone transitions
     zoneCache.stamp = 0
+    -- If leaving a 5-man after a successful boss and we never saw a completion
+    -- event (e.g., non-LFG classic dungeons), grant a completion once.
+    maybeCreditDungeonOnExit()
 
   elseif event == "PLAYER_LOGOUT" then
     -- OPT: Cancel tickers to avoid orphan timers on reload
@@ -1749,4 +1822,38 @@ _G.CharacterMemory_ProfiledFunctions = {
   groupTick = groupTick,
   tavernTick = tavernTick,
   instanceGroupTick = instanceGroupTick,
+}
+
+-- Delete entry confirmation dialog
+StaticPopupDialogs["CONFIRM_DELETE_CHARACTER_MEMORY_ENTRY"] = {
+  text = "Are you sure you want to delete this character from your memory? This action cannot be undone.",
+  button1 = "Delete",
+  button2 = "Cancel",
+  OnAccept = function(self, data)
+    if data and data.guid then
+      -- Remove the entry from the database
+      if CharacterMemoryDB and CharacterMemoryDB.entries then
+        CharacterMemoryDB.entries[data.guid] = nil
+      end
+      
+      -- Update UI if this was the selected entry
+      if _G.CMJ and _G.CMJ.NotifyDataChanged then
+        _G.CMJ.NotifyDataChanged()
+      end
+      
+      -- Clear selection if this was the selected entry
+      if _G.CMJ and _G.CMJ.refs and _G.CMJ.refs.root and _G.CMJ.refs.root:IsShown() then
+        if _G.CMJ.Model and _G.CMJ.Model.selected == data.guid then
+          _G.CMJ.Model.selected = nil
+          _G.CMJ.PopulateDetail(nil)
+        end
+      end
+      
+      printMessage("Character deleted from memory.")
+    end
+  end,
+  timeout = 0,
+  whileDead = true,
+  hideOnEscape = true,
+  preferredIndex = 3,
 }

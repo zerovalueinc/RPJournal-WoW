@@ -21,15 +21,15 @@ CMJ = CMJ or {}
 CMUI = CMUI or {}
 
 -- Geometry
-local GEO = {
-  LEFT_INSET = 64, RIGHT_INSET = 64, TOP_INSET = 56, BOTTOM_INSET = 60,
-  GUTTER_HALF = 22, PAD = 12, ROW_H = 56, LINE = 20,
-  WIDTH = 1024, HEIGHT = 512, CX = 512,
-  COL_W = 220, COL_GAP = 20,
-}
+  local GEO = {
+    LEFT_INSET = 64, RIGHT_INSET = 64, TOP_INSET = 56, BOTTOM_INSET = 60,
+    GUTTER_HALF = 16, PAD = 10, ROW_H = 48, LINE = 18,
+    WIDTH = 1024, HEIGHT = 512, CX = 512,
+    COL_W = 220, COL_GAP = 16,
+  }
 
 -- Pagination settings
-local PAGE_SIZE = 5
+local PAGE_SIZE = 7
 
 -- Dev tint for page bounds (off by default)
 local DEBUG_TINT = false
@@ -142,6 +142,25 @@ local function Debounce(key, delay, fn)
     pendingTimers[key] = nil
     fn()
   end)
+end
+
+-- Small helper to size a bar's fill texture based on fraction, resilient to layout timing
+local function SetBarFraction(bar, fraction, rightPad)
+  if not bar or not bar.fill or not bar.GetWidth then return end
+  bar._pct = math.max(0, math.min(1, tonumber(fraction or 0) or 0))
+  local function apply()
+    local w = tonumber(bar:GetWidth() or 0) or 0
+    local pad = tonumber(rightPad or 0) or 0
+    if w > 0 then
+      local target = math.max(0, (w - pad)) * bar._pct
+      bar.fill:SetWidth(target)
+    end
+  end
+  if not bar._hooked then
+    bar._hooked = true
+    if bar.HookScript then bar:HookScript("OnSizeChanged", function() apply() end) end
+  end
+  apply()
 end
 
 -- OPT: UI helpers
@@ -415,7 +434,9 @@ local function BuildFromXML()
   faux:SetScript("OnVerticalScroll", nil)
 
   -- Next page button
+  local prevBtn = _G.CMJ_RootXMLPageLPrev
   local nextBtn = _G.CMJ_RootXMLPageLNext
+  local pageInd = _G.CMJ_RootXMLPageLPageIndicator
   if nextBtn then
     nextBtn:SetScript("OnClick", function()
       Model.page = (Model.page or 1) + 1
@@ -463,7 +484,14 @@ local function BuildFromXML()
   end
   -- Expose tab swap for XML OnClick bindings
   function CMUI.TabSwap(which)
-    tabSwap(which)
+    if which == "Profile" then
+      -- Profile tab now opens the RP Bio character sheet
+      if CharacterMemory_OpenCharacterSheet then
+        CharacterMemory_OpenCharacterSheet()
+      end
+    else
+      tabSwap(which)
+    end
   end
   -- XML now calls CMUI.TabSwap; keep Lua bindings as fallback in case XML not loaded
   if tabOverview and not tabOverview:GetScript("OnClick") then tabOverview:SetScript("OnClick", function() tabSwap("Overview") end) end
@@ -482,6 +510,19 @@ local function BuildFromXML()
     CMJ.PopulateDetail(id)
   end
 
+  -- Expose delete entry function for XML OnClick bindings
+  function CMUI.DeleteEntry(id)
+    if not id then return end
+    
+    -- Show confirmation dialog
+    StaticPopup_Show("CONFIRM_DELETE_CHARACTER_MEMORY_ENTRY", nil, nil, { guid = id })
+  end
+
+  -- Expose get selected entry function for XML OnClick bindings
+  function CMUI.GetSelectedEntry()
+    return Model.selected
+  end
+
   -- Bind overview widgets from XML
   local title = _G.CMJ_RootXMLPageROverviewTitle
   local tier  = _G.CMJ_RootXMLPageROverviewTier
@@ -497,14 +538,22 @@ local function BuildFromXML()
     relPips[i] = _G["CMJ_RootXMLPageROverviewRelPipsPip"..i]
   end
 
-  -- Summary rows (stacked)
-  local summary = { rows = {} }
-  for i=1,6 do
-    local row = _G["CMJ_RootXMLPageROverviewSummaryRow"..i]
-    if row and row.label and row.value then
-      -- Ensure consistent fonts and alignment
-      if row.value.SetJustifyH then row.value:SetJustifyH("RIGHT") end
-      table.insert(summary.rows, {label=row.label, value=row.value})
+  -- Summary grid (3x3 cells)
+  local summary = { left = {}, right = {} }
+  do
+    -- Collect 2x3 grid using StatRow rows
+    for i=1,3 do
+      local L = _G["CMJ_RootXMLPageROverviewSummaryLeftRow"..i]
+      local Rr = _G["CMJ_RootXMLPageROverviewSummaryRightRow"..i]
+      if L and L.label and L.value then summary.left[i] = { label=L.label, value=L.value } end
+      if Rr and Rr.label and Rr.value then summary.right[i] = { label=Rr.label, value=Rr.value } end
+    end
+    -- Prime labels: left = Race, iLvl, Faction; right = Gender, Level, Guild
+    local labelsLeft  = { "Race", "iLvl", "Faction" }
+    local labelsRight = { "Gender", "Level", "Guild" }
+    for i=1,3 do
+      if summary.left[i] and summary.left[i].label.SetText then summary.left[i].label:SetText(labelsLeft[i] or "") end
+      if summary.right[i] and summary.right[i].label.SetText then summary.right[i].label:SetText(labelsRight[i] or "") end
     end
   end
 
@@ -518,14 +567,16 @@ local function BuildFromXML()
     end
   end
 
-  -- Facts grid labels/values (relation details)
-  local factLabels, factValues = {}, {}
-  for i=1,12 do
-    factLabels[i] = _G["CMJ_RootXMLPageROverviewFactsLabel"..i]
-    factValues[i] = _G["CMJ_RootXMLPageROverviewFactsValue"..i]
-    if factLabels[i] and factLabels[i].Hide then factLabels[i]:Show() end
-    if factValues[i] and factValues[i].Hide then factValues[i]:Show() end
+  -- Facts grid rows (two rigid halves like Achievements rows)
+  local _factRowsLeft = CMJ._factRowsLeft or {}
+  local _factRowsRight = CMJ._factRowsRight or {}
+  for i=1,5 do
+    local L = _G["CMJ_RootXMLPageROverviewFactsLeftRow"..i]
+    local Rr = _G["CMJ_RootXMLPageROverviewFactsRightRow"..i]
+    if L and L.label and L.value then _factRowsLeft[i] = { label=L.label, value=L.value, frame=L } end
+    if Rr and Rr.label and Rr.value then _factRowsRight[i] = { label=Rr.label, value=Rr.value, frame=Rr } end
   end
+  CMJ._factRowsLeft, CMJ._factRowsRight = _factRowsLeft, _factRowsRight
   -- Details header removed; nothing to wire
 
   -- Notes tab widgets
@@ -540,6 +591,10 @@ local function BuildFromXML()
   -- Settings UI moved to Interface Options
 
   -- Profile widgets
+  local profileRow = _G.CMJ_RootXMLPageRProfileProfileRow
+  local profileNameFS = profileRow and profileRow.name or _G.CMJ_RootXMLPageRProfileProfileRow and _G.CMJ_RootXMLPageRProfileProfileRow.name
+  local profileAchBar = profileRow and profileRow.achBar
+  local profileAchText = profileRow and profileRow.achText
   local ageEB     = _G.CMJ_RootXMLPageRProfileAgeEB
   local heightEB  = _G.CMJ_RootXMLPageRProfileHeightEB
   local weightEB  = _G.CMJ_RootXMLPageRProfileWeightEB
@@ -608,10 +663,12 @@ local function BuildFromXML()
 
   CMJ.refs = {
     root=root, pageLContent=pageLContent, pageRContent=pageRContent,
-    nextBtn = nextBtn,
+    prevBtn = prevBtn, nextBtn = nextBtn, pageInd = pageInd,
     -- overview
     title=title, tier=tier, relBar=relBar, relFill=relFill, relPct=relPct, relPips=relPips,
-    summary=summary, statsRow=statsRow, factLabels=factLabels, factValues=factValues,
+    nameAchBar=_G.CMJ_RootXMLPageROverviewNameAchBar,
+    summary=summary, statsRow=statsRow,
+    factRowsLeft=_factRowsLeft, factRowsRight=_factRowsRight,
     portR=portR, facts=factsFrame,
     -- tabs
     overview=overview, notes=notes, profile=profile, stats=nil, achievements=achievements,
@@ -623,6 +680,7 @@ local function BuildFromXML()
     ageEB=ageEB, heightEB=heightEB, weightEB=weightEB, eyesEB=eyesEB, hairEB=hairEB,
     personalityEB=personalityEB, idealsEB=idealsEB, bondsEB=bondsEB, flawsEB=flawsEB,
     backgroundEB=backgroundEB, langEB=langEB, profEB=profEB, aliasEB=aliasEB, alignEB=alignEB, saveBtn=saveBtn,
+    profileRow=profileRow, profileNameFS=profileNameFS, profileAchBar=profileAchBar, profileAchText=profileAchText,
     -- stats grid
     statsGrid=statsGrid,
     -- scrolling
@@ -641,14 +699,44 @@ local function BuildFromXML()
       _G.CMJ_RootXMLPageLRow6, _G.CMJ_RootXMLPageLRow7, _G.CMJ_RootXMLPageLRow8, _G.CMJ_RootXMLPageLRow9, _G.CMJ_RootXMLPageLRow10,
     }
     SyncFromDB(); ApplyFilter(); CMJ.RebuildList(); if Model.selected then CMJ.PopulateDetail(Model.selected) end
+    -- Wire pagination controls
+    if CMJ.refs.prevBtn and not CMJ.refs.prevBtn._wired then
+      CMJ.refs.prevBtn._wired = true
+      CMJ.refs.prevBtn:SetScript("OnClick", function()
+        local maxPages = math.max(1, math.ceil(#Model.order / PAGE_SIZE))
+        Model.page = (Model.page or 1) - 1; if Model.page < 1 then Model.page = maxPages end
+        CMJ.RefreshList()
+        if CMJ.UpdatePageIndicator then CMJ.UpdatePageIndicator() end
+      end)
+    end
+    if CMJ.refs.nextBtn and not CMJ.refs.nextBtn._wired then
+      CMJ.refs.nextBtn._wired = true
+      CMJ.refs.nextBtn:SetScript("OnClick", function()
+        local maxPages = math.max(1, math.ceil(#Model.order / PAGE_SIZE))
+        Model.page = (Model.page or 1) + 1; if Model.page > maxPages then Model.page = 1 end
+        CMJ.RefreshList()
+        if CMJ.UpdatePageIndicator then CMJ.UpdatePageIndicator() end
+      end)
+    end
+    if CMJ.UpdatePageIndicator then CMJ.UpdatePageIndicator() end
   end)
 
   -- Recompute visible rows on left page size changes
   pageL:HookScript("OnSizeChanged", function()
     if CMJ.RebuildList then CMJ.RebuildList() end
+    if CMJ.UpdatePageIndicator then CMJ.UpdatePageIndicator() end
   end)
 
   return root
+end
+function CMJ.UpdatePageIndicator()
+  local R=CMJ.refs; if not R then return end
+  if R.pageInd and R.pageInd.text and R.pageInd.text.SetText then
+    local total = #Model.order
+    local maxPages = math.max(1, math.ceil(total / PAGE_SIZE))
+    local cur = Model.page or 1
+    R.pageInd.text:SetText(string_format("Page %d / %d", cur, maxPages))
+  end
 end
 
 -- OPT: Debounced list rebuild to avoid layout thrash
@@ -669,6 +757,17 @@ function CMJ.RefreshList()
       local tierText = string_format("Lv %d • %s", e.level or 0, e.tier or "Stranger")
       row.name:SetText(ColorizeNameByClass(e.name or "Unknown", e.classFile))
       row.sub:SetText(tierText)
+      -- Update small achievements bar next to name
+      do
+        local bar = row.achBar
+        if bar then
+          local sum = (_G.CharacterMemory_GetAchievementSummary and _G.CharacterMemory_GetAchievementSummary(id)) or {total=0,done=0}
+          local total = math.max(1, tonumber(sum.total or 0))
+          local done = tonumber(sum.done or 0) or 0
+          local pct = math.max(0, math.min(1, done / total))
+          SetBarFraction(bar, pct, 0)
+        end
+      end
       if row.date then row.date:SetText("") end
       local isSel = (Model.selected==id)
       row.sel:SetShown(isSel); if row.selBG then row.selBG:SetShown(isSel) end
@@ -686,6 +785,11 @@ function CMJ.RefreshList()
   if R.nextBtn then
     local maxPages = math.max(1, math.ceil(total / PAGE_SIZE))
     R.nextBtn:SetEnabled(maxPages > 1)
+  end
+  if R.pageInd and R.pageInd.text and R.pageInd.text.SetText then
+    local maxPages = math.max(1, math.ceil(total / PAGE_SIZE))
+    local cur = Model.page or 1
+    R.pageInd.text:SetText(string_format("Page %d / %d", cur, maxPages))
   end
 end
 
@@ -736,14 +840,17 @@ function CMJ.PopulateDetail(id)
   -- Relation section shows only metrics now
   -- No progress visuals remain
   if R.facts and R.facts.Show then R.facts:Show() end
-  local sc=R.summary.rows; if sc then
-    if sc[1] and sc[1].value then sc[1].value:SetText(e.race or e.raceFile or "—") end
-    local genderText = (e.gender==2 and "Male") or (e.gender==3 and "Female") or "—"
-    if sc[2] and sc[2].value then sc[2].value:SetText(genderText) end
-    if sc[3] and sc[3].value then sc[3].value:SetText(tostring(e.charLevel or e.level or 0)) end
-    if sc[4] and sc[4].value then sc[4].value:SetText(e.itemLevel and tostring(e.itemLevel) or "—") end
-    if sc[5] and sc[5].value then sc[5].value:SetText(e.faction or "—") end
-    if sc[6] and sc[6].value then sc[6].value:SetText(e.guildName or "—") end
+  do
+    local S = R.summary
+    if S and S.left and S.right then
+      local genderText = (e.gender==2 and "Male") or (e.gender==3 and "Female") or "—"
+      local leftVals  = { e.race or e.raceFile or "—", e.itemLevel and tostring(e.itemLevel) or "—", e.faction or "—" }
+      local rightVals = { genderText, tostring(e.charLevel or e.level or 0), e.guildName or "—" }
+      for i=1,3 do
+        local L = S.left[i];  if L and L.value  and L.value.SetText  then L.value:SetText(leftVals[i]  or "") end
+        local Rw = S.right[i]; if Rw and Rw.value and Rw.value.SetText then Rw.value:SetText(rightVals[i] or "") end
+      end
+    end
   end
   -- Populate relation details grid with interaction/event metrics
   local s=e.stats or {}
@@ -755,29 +862,88 @@ function CMJ.PopulateDetail(id)
     {"Duels", (CMUI and CMUI.FmtNum and CMUI.FmtNum(s.duels or 0)) or tostring(s.duels or 0)},
     {"Pet Duels", (CMUI and CMUI.FmtNum and CMUI.FmtNum(s.petDuels or 0)) or tostring(s.petDuels or 0)},
     {"PvP Matches", (CMUI and CMUI.FmtNum and CMUI.FmtNum(totalPvP)) or tostring(totalPvP)},
-    {"Completed Dungeons", (CMUI and CMUI.FmtNum and CMUI.FmtNum(s.dungeonCompletions or 0)) or tostring(s.dungeonCompletions or 0)},
+    {"Dungeons", (CMUI and CMUI.FmtNum and CMUI.FmtNum(s.dungeonCompletions or 0)) or tostring(s.dungeonCompletions or 0)},
     {"Raid Boss Kills", (CMUI and CMUI.FmtNum and CMUI.FmtNum(s.bossKillsRaid or 0)) or tostring(s.bossKillsRaid or 0)},
     {"Group Time", (CMUI and CMUI.FmtTimeShort and CMUI.FmtTimeShort(s.groupSeconds or 0)) or "0m"},
     {"Invites", string_format("%s from • %s to", (CMUI and CMUI.FmtNum and CMUI.FmtNum(s.invitesFrom or 0)) or tostring(s.invitesFrom or 0), (CMUI and CMUI.FmtNum and CMUI.FmtNum(s.invitesTo or 0)) or tostring(s.invitesTo or 0))},
     {"Nearby", (CMUI and CMUI.FmtNum and CMUI.FmtNum(s.nearbyTicks or 0)) or tostring(s.nearbyTicks or 0)},
   }
-  for i=1,10 do
-    if R.factLabels[i] then R.factLabels[i]:SetText(facts[i] and facts[i][1] or ""); R.factLabels[i]:Show() end
-    if R.factValues[i] then R.factValues[i]:SetText(facts[i] and facts[i][2] or ""); R.factValues[i]:Show() end
+  -- Paint into rigid rows (left 1..5, right 6..10)
+  do
+    for i=1,5 do
+      local row = (CMJ.refs.factRowsLeft and CMJ.refs.factRowsLeft[i]) or (CMJ._factRowsLeft and CMJ._factRowsLeft[i])
+      local item = facts[i]
+      if row and item then
+        if row.label and row.label.SetText then row.label:SetText(item[1] or "") end
+        if row.value and row.value.SetText then row.value:SetText(item[2] or "") end
+        if row.frame and row.frame.Show then row.frame:Show() end
+      end
+    end
+    for i=1,5 do
+      local k = 5 + i
+      local row = (CMJ.refs.factRowsRight and CMJ.refs.factRowsRight[i]) or (CMJ._factRowsRight and CMJ._factRowsRight[i])
+      local item = facts[k]
+      if row and item then
+        if row.label and row.label.SetText then row.label:SetText(item[1] or "") end
+        if row.value and row.value.SetText then row.value:SetText(item[2] or "") end
+        if row.frame and row.frame.Show then row.frame:Show() end
+      end
+    end
   end
-  local s=e.stats or {}
-  local vals={
-    s.parties or 0,
-    s.raids or 0,
-    s.pvpMatches or 0,
-    s.duels or 0,
-    s.trades or 0,
-    s.whispers or 0,
-    (s.bossKillsDungeon or 0)+(s.bossKillsRaid or 0),
-    (s.readyChecks or 0) + (s.wipesWith or 0),
-  }
-  for i,it in ipairs(R.statsRow.items) do it.fs:SetText(vals[i] or 0) end
+  -- Activity section removed from XML; guard in case legacy frames exist
+  do
+    local sLocal=e.stats or {}
+    local vals={
+      sLocal.parties or 0,
+      sLocal.raids or 0,
+      sLocal.pvpMatches or 0,
+      sLocal.duels or 0,
+      sLocal.trades or 0,
+      sLocal.whispers or 0,
+      (sLocal.bossKillsDungeon or 0)+(sLocal.bossKillsRaid or 0),
+      (sLocal.readyChecks or 0) + (sLocal.wipesWith or 0),
+    }
+    if R.statsRow and R.statsRow.items then
+      for i,it in ipairs(R.statsRow.items) do if it and it.fs and it.fs.SetText then it.fs:SetText(vals[i] or 0) end end
+    end
+  end
   if R.noteEdit then R.noteEdit:SetText(e.notes or "") end
+
+  -- Removed large Achievements summary bar
+
+  -- Overview header name achievements mini bar
+  do
+    local bar = R.nameAchBar
+    if bar then
+      local sum = (_G.CharacterMemory_GetAchievementSummary and _G.CharacterMemory_GetAchievementSummary(id)) or {total=0,done=0}
+      local total = math.max(1, tonumber(sum.total or 0))
+      local done = tonumber(sum.done or 0) or 0
+      local pct = math.max(0, math.min(1, done / total))
+      -- If this is a StatusBar, set its value and center text; else fall back to texture width sizing
+      if bar.SetMinMaxValues and bar.SetValue then
+        bar:SetMinMaxValues(0, 1)
+        bar:SetValue(pct)
+        if bar.value and bar.value.SetText then bar.value:SetText(string_format("%d / %d", done, total)) end
+      else
+        SetBarFraction(bar, pct, 0)
+        if bar.value and bar.value.SetText then bar.value:SetText(string_format("%d / %d", done, total)) end
+      end
+    end
+  end
+
+  -- Profile header name + achievements bar (Profile tab)
+  do
+    local row = R.profileRow
+    if row and R.profileNameFS then
+      R.profileNameFS:SetText(ColorizeNameByClass(e.name or "Unknown", e.classFile))
+      local sum = (_G.CharacterMemory_GetAchievementSummary and _G.CharacterMemory_GetAchievementSummary(id)) or {total=0,done=0}
+      local total = math.max(1, tonumber(sum.total or 0))
+      local done = tonumber(sum.done or 0) or 0
+      local pct = math.max(0, math.min(1, done / total))
+      if R.profileAchBar then SetBarFraction(R.profileAchBar, pct, 0) end
+      if R.profileAchText and R.profileAchText.SetText then R.profileAchText:SetText(string_format("%d / %d", done, total)) end
+    end
+  end
   -- If we have a publicBio received, surface it under profile background when switching to Profile tab
   if R.backgroundEB then
     local p = e.profile or {}
@@ -874,8 +1040,18 @@ function CMJ.PopulateDetail(id)
 end
 
 function CMJ.Toggle()
-  if not CMJ.refs.root then BuildFromXML() end
+  if not CMJ.refs.root then 
+    local root = BuildFromXML()
+    if not root then
+      DEFAULT_CHAT_FRAME:AddMessage("Character Memory: Failed to build UI. Please reload your UI.")
+      return
+    end
+  end
   local f=CMJ.refs.root
+  if not f then
+    DEFAULT_CHAT_FRAME:AddMessage("Character Memory: UI not available. Please reload your UI.")
+    return
+  end
   if f:IsShown() then f:Hide() else
     -- OPT: Avoid protected toggles during combat
     if InCombatLockdown and InCombatLockdown() then DEFAULT_CHAT_FRAME:AddMessage("Character Memory: UI blocked in combat") return end

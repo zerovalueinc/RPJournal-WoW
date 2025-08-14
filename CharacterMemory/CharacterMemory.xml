@@ -1,27 +1,44 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
   <!-- Reusable list row template (must be defined before use) -->
   <Button name="CMJ_ListRowTemplate" virtual="true" inherits="BackdropTemplate">
-    <Size y="67"/>
+    <Size y="41"/>
     <Anchors>
       <Anchor point="LEFT"/>
       <Anchor point="RIGHT"/>
     </Anchors>
     <Layers>
       <Layer level="ARTWORK">
+        <!-- Selected indicator bar inset to align with the new hover/sel insets -->
         <Texture parentKey="sel" hidden="true">
           <Color r="1" g="1" b="0" a="0.9"/>
           <Anchors>
-            <Anchor point="TOPLEFT"/>
-            <Anchor point="BOTTOMLEFT"/>
+            <Anchor point="TOPLEFT" x="5" y="0"/>
+            <Anchor point="BOTTOMLEFT" x="5" y="0"/>
           </Anchors>
           <Size x="3"/>
+        </Texture>
+        <!-- Selected background (low-key) with a 5px left inset so it doesn't sit under the name column -->
+        <Texture parentKey="selBG" hidden="true">
+          <Anchors>
+            <Anchor point="TOPLEFT" x="5" y="0"/>
+            <Anchor point="BOTTOMRIGHT" x="0" y="0"/>
+          </Anchors>
+          <Color r="0" g="0" b="0" a="0.18"/>
+        </Texture>
+        <!-- Hover background with same 5px left inset -->
+        <Texture parentKey="hover" hidden="true">
+          <Anchors>
+            <Anchor point="TOPLEFT" x="5" y="0"/>
+            <Anchor point="BOTTOMRIGHT" x="0" y="0"/>
+          </Anchors>
+          <Color r="1" g="1" b="1" a="0.05"/>
         </Texture>
         <!-- Portrait and badges removed for a cleaner, left-aligned list -->
       </Layer>
       <Layer level="OVERLAY">
-        <FontString parentKey="name" inherits="GameFontNormal">
+        <FontString parentKey="name" inherits="GameFontHighlight" justifyH="LEFT">
           <Anchors>
-            <Anchor point="LEFT" x="0" y="10"/>
+            <Anchor point="LEFT" x="10" y="0"/>
           </Anchors>
           <Size x="220"/>
         </FontString>
@@ -32,23 +49,37 @@
           </Anchors>
           <Size x="1"/>
         </FontString>
-        <FontString parentKey="sub" inherits="GameFontDisable">
+        <FontString parentKey="sub" inherits="GameFontHighlightSmall" justifyH="RIGHT">
           <Anchors>
             <Anchor point="LEFT" relativeKey="$parent.name" relativePoint="RIGHT" x="12" y="0"/>
             <Anchor point="RIGHT" x="-12" y="0"/>
           </Anchors>
+          <Color r="0.85" g="0.85" b="0.85"/>
         </FontString>
+        <!-- Small achievements bar next to the name (defined under Frames) -->
         <Texture parentKey="badge" hidden="true" file="Interface/AchievementFrame/AchievementStar">
           <Size x="14" y="14"/>
           <Anchors>
             <Anchor point="RIGHT" x="-6" y="10"/>
           </Anchors>
         </Texture>
+        <!-- Divider -->
+        <Texture parentKey="divider">
+          <Anchors>
+            <Anchor point="BOTTOMLEFT" x="0" y="0"/>
+            <Anchor point="BOTTOMRIGHT" x="0" y="0"/>
+          </Anchors>
+          <Size y="1"/>
+          <Color r="0" g="0" b="0" a="0.12"/>
+        </Texture>
       </Layer>
     </Layers>
+    <!-- No child frames needed in list row template -->
     <Scripts>
       <OnLoad> self:EnableMouse(true); self:RegisterForClicks("AnyUp"); self._cmIsRow = true; </OnLoad>
       <OnClick> if self.id and CMUI and CMUI.Select then CMUI.Select(self.id) end </OnClick>
+      <OnEnter> if self.hover then self.hover:Show() end </OnEnter>
+      <OnLeave> if self.hover then self.hover:Hide() end </OnLeave>
     </Scripts>
   </Button>
 
@@ -107,11 +138,80 @@
     </Anchors>
     <Layers>
       <Layer level="OVERLAY">
-        <FontString parentKey="label" inherits="GameFontDisable">
+        <FontString parentKey="label" inherits="GameFontDisable" maxLines="1" justifyH="LEFT">
+          <Size x="110"/>
           <Anchors><Anchor point="LEFT" x="4"/></Anchors>
         </FontString>
-        <FontString parentKey="value" inherits="GameFontHighlight" justifyH="RIGHT">
-          <Anchors><Anchor point="RIGHT" x="-8"/></Anchors>
+        <FontString parentKey="value" inherits="GameFontHighlight" justifyH="LEFT" maxLines="1">
+          <Anchors>
+            <Anchor point="LEFT" relativeKey="$parent.label" relativePoint="RIGHT" x="12"/>
+            <Anchor point="RIGHT" x="-8"/>
+          </Anchors>
+        </FontString>
+      </Layer>
+    </Layers>
+  </Frame>
+
+  <!-- Stat row template with taller height and multi-line value support -->
+  <Frame name="CMJ_StatRowMulti" virtual="true" inherits="BackdropTemplate">
+    <Size y="36"/>
+    <Anchors>
+      <Anchor point="LEFT"/>
+      <Anchor point="RIGHT"/>
+    </Anchors>
+    <Layers>
+      <Layer level="OVERLAY">
+        <FontString parentKey="label" inherits="GameFontDisable" maxLines="1" justifyH="LEFT" justifyV="TOP">
+          <Size x="110"/>
+          <Anchors><Anchor point="TOPLEFT" x="4" y="0"/></Anchors>
+        </FontString>
+        <FontString parentKey="value" inherits="GameFontHighlight" justifyH="LEFT" justifyV="TOP" maxLines="3">
+          <Anchors>
+            <Anchor point="TOPLEFT" relativeKey="$parent.label" relativePoint="TOPRIGHT" x="12" y="0"/>
+            <Anchor point="RIGHT" x="-8" y="0"/>
+          </Anchors>
+        </FontString>
+      </Layer>
+    </Layers>
+  </Frame>
+
+  <!-- Two-line variant for values that should wrap to at most 2 lines (e.g., Guild) -->
+  <Frame name="CMJ_StatRowTwoLine" virtual="true" inherits="BackdropTemplate">
+    <Size y="32"/>
+    <Anchors>
+      <Anchor point="LEFT"/>
+      <Anchor point="RIGHT"/>
+    </Anchors>
+    <Layers>
+      <Layer level="OVERLAY">
+        <FontString parentKey="label" inherits="GameFontDisable" maxLines="1" justifyH="LEFT" justifyV="TOP">
+          <Size x="110"/>
+          <Anchors><Anchor point="TOPLEFT" x="4" y="0"/></Anchors>
+        </FontString>
+        <FontString parentKey="value" inherits="GameFontHighlight" justifyH="LEFT" justifyV="TOP" maxLines="2">
+          <Anchors>
+            <Anchor point="TOPLEFT" relativeKey="$parent.label" relativePoint="TOPRIGHT" x="12" y="0"/>
+            <Anchor point="RIGHT" x="-8" y="0"/>
+          </Anchors>
+        </FontString>
+      </Layer>
+    </Layers>
+  </Frame>
+
+  <!-- Compact stat cell for grid (label left, value right) -->
+  <Frame name="CMJ_StatCell" virtual="true" inherits="BackdropTemplate">
+    <Size x="150" y="20"/>
+    <Layers>
+      <Layer level="OVERLAY">
+        <FontString parentKey="label" inherits="GameFontDisableSmall" maxLines="1" justifyV="MIDDLE" justifyH="LEFT">
+          <Size x="64"/>
+          <Anchors><Anchor point="TOPLEFT" x="4" y="0"/></Anchors>
+        </FontString>
+        <FontString parentKey="value" inherits="GameFontHighlight" justifyH="LEFT" justifyV="MIDDLE" maxLines="1">
+          <Anchors>
+            <Anchor point="TOPLEFT" x="72" y="0"/>
+            <Anchor point="TOPRIGHT" x="-4" y="0"/>
+          </Anchors>
         </FontString>
       </Layer>
     </Layers>
@@ -119,27 +219,41 @@
 
   <!-- Achievement row template (title, description, progress right, Claim button) -->
   <Frame name="CMJ_AchievementRowTemplate" virtual="true" inherits="BackdropTemplate">
-    <Size y="34"/>
+    <Size y="40"/>
     <Anchors>
       <Anchor point="LEFT"/>
       <Anchor point="RIGHT"/>
     </Anchors>
     <Layers>
       <Layer level="OVERLAY">
-        <FontString parentKey="title" inherits="GameFontNormal">
+        <!-- Title: brighter for readability with subtle gold tint -->
+        <FontString parentKey="title" inherits="GameFontHighlight">
           <Anchors><Anchor point="TOPLEFT" x="0" y="-2"/></Anchors>
+          <Color r="0.95" g="0.90" b="0.70"/>
         </FontString>
+        <!-- Description: slightly brighter than disabled gray for contrast on parchment -->
         <FontString parentKey="desc" inherits="GameFontDisableSmall">
           <Anchors><Anchor point="TOPLEFT" relativeKey="$parent.title" relativePoint="BOTTOMLEFT" y="-1"/></Anchors>
+          <Color r="0.85" g="0.85" b="0.85" a="0.9"/>
         </FontString>
-        <FontString parentKey="progress" inherits="GameFontHighlightSmall">
-          <Anchors><Anchor point="RIGHT" x="-64" y="0"/></Anchors>
+        <!-- Progress: larger and right-aligned with strong contrast -->
+        <FontString parentKey="progress" inherits="GameFontHighlight">
+          <Anchors><Anchor point="RIGHT" x="-72" y="-2"/></Anchors>
         </FontString>
+        <!-- Row divider for visual separation -->
+        <Texture parentKey="divider">
+          <Anchors>
+            <Anchor point="BOTTOMLEFT" x="0" y="0"/>
+            <Anchor point="BOTTOMRIGHT" x="0" y="0"/>
+          </Anchors>
+          <Size y="1"/>
+          <Color r="0" g="0" b="0" a="0.18"/>
+        </Texture>
       </Layer>
     </Layers>
     <Frames>
       <Button parentKey="claim" inherits="UIPanelButtonTemplate" text="Claim">
-        <Size x="56" y="18"/>
+        <Size x="68" y="20"/>
         <Anchors><Anchor point="RIGHT" x="-4"/></Anchors>
       </Button>
     </Frames>
@@ -155,7 +269,7 @@
     <Layers>
       <Layer level="BACKGROUND">
         <Texture parentKey="bg" setAllPoints="true">
-          <Color r="0" g="0" b="0" a="0.05"/>
+          <Color r="0" g="0" b="0" a="0"/>
         </Texture>
       </Layer>
       <Layer level="OVERLAY">
@@ -210,51 +324,64 @@
         <Layers>
       <Layer level="OVERLAY">
         <FontString name="$parentHeader" inherits="GameFontNormalLarge" text="Friendships">
-              <Anchors><Anchor point="TOPLEFT"/></Anchors>
+              <Anchors><Anchor point="TOPLEFT" y="0"/></Anchors>
             </FontString>
           </Layer>
         </Layers>
         <Frames>
           <ScrollFrame name="$parentFaux" inherits="FauxScrollFrameTemplate">
             <Anchors>
-              <Anchor point="TOPLEFT" x="0" y="-24"/>
+              <Anchor point="TOPLEFT" x="0" y="-46"/>
               <Anchor point="BOTTOMRIGHT" x="-28" y="0"/>
             </Anchors>
             <Scripts>
               <OnVerticalScroll>
-                FauxScrollFrame_OnVerticalScroll(self, 40, CMJ.RefreshList)
+                FauxScrollFrame_OnVerticalScroll(self, 41, CMJ.RefreshList)
               </OnVerticalScroll>
             </Scripts>
           </ScrollFrame>
-          <!-- Next page button (replaces scroll usage) -->
-          <Button name="$parentNext" inherits="UIPanelButtonTemplate" text="Next">
-            <Size x="72" y="20"/>
+          <!-- Toolbar row under the Friendships header for controls like filter -->
+          <Frame name="$parentToolbar">
+            <Size y="22"/>
             <Anchors>
-              <Anchor point="BOTTOMLEFT" x="0" y="0"/>
+              <Anchor point="TOPLEFT" x="0" y="-16"/>
+              <Anchor point="RIGHT" x="-120"/>
             </Anchors>
-          </Button>
-          <Button name="$parentFilterToggle" inherits="UIPanelButtonTemplate" text="Prioritize Friends">
-            <Size x="160" y="20"/>
+          </Frame>
+          <!-- Filter dropdown placed inside the toolbar row -->
+          <Frame name="$parentFilterMenu" inherits="UIDropDownMenuTemplate">
             <Anchors>
-              <Anchor point="LEFT" relativeTo="$parentNext" relativePoint="RIGHT" x="8"/>
+              <Anchor point="RIGHT" relativeTo="$parentToolbar" relativePoint="RIGHT" x="-12" y="0"/>
             </Anchors>
             <Scripts>
-              <OnClick>
-                CharacterMemoryDB = CharacterMemoryDB or { settings = {} };
-                CharacterMemoryDB.settings.hideStrangers = not (CharacterMemoryDB.settings.hideStrangers or false);
-                if CMJ and CMJ.NotifyDataChanged then CMJ.NotifyDataChanged() end
-              </OnClick>
-              <OnEnter>
-                GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-                GameTooltip:SetText("Toggle hiding low-relationship strangers.")
-              </OnEnter>
-              <OnLeave> GameTooltip:Hide() </OnLeave>
+              <OnLoad> if CMUI and CMUI.InitFriendFilter then CMUI.InitFriendFilter(self) end </OnLoad>
             </Scripts>
+          </Frame>
+          <!-- Next page button (replaces scroll usage) -->
+          <!-- Pagination: Prev / PageIndicator / Next -->
+          <Button name="$parentPrev" inherits="UIPanelButtonTemplate" text="Prev">
+            <Size x="56" y="20"/>
+            <Anchors><Anchor point="BOTTOMLEFT" x="0" y="0"/></Anchors>
+          </Button>
+          <Frame name="$parentPageIndicator">
+            <Size x="120" y="20"/>
+            <Anchors><Anchor point="BOTTOM" x="0" y="0"/></Anchors>
+            <Layers>
+              <Layer level="OVERLAY">
+                <FontString parentKey="text" inherits="GameFontDisableSmall" justifyH="CENTER">
+                  <Anchors><Anchor point="CENTER"/></Anchors>
+                </FontString>
+              </Layer>
+            </Layers>
+          </Frame>
+          <Button name="$parentNext" inherits="UIPanelButtonTemplate" text="Next">
+            <Size x="56" y="20"/>
+            <Anchors><Anchor point="BOTTOMRIGHT" x="0" y="0"/></Anchors>
           </Button>
           <!-- Predefined row buttons (template from CMJ_ListRowTemplate) -->
           <Button name="$parentRow1" inherits="CMJ_ListRowTemplate">
             <Anchors>
-              <Anchor point="TOPLEFT" x="0" y="-24"/>
+              <Anchor point="TOPLEFT" x="0" y="-46"/>
               <Anchor point="RIGHT" x="-28"/>
             </Anchors>
           </Button>
@@ -306,17 +433,12 @@
               <Anchor point="RIGHT" x="-28"/>
             </Anchors>
           </Button>
-          <Button name="$parentRow10" inherits="CMJ_ListRowTemplate">
-            <Anchors>
-              <Anchor point="TOPLEFT" relativeTo="$parentRow9" relativePoint="BOTTOMLEFT"/>
-              <Anchor point="RIGHT"/>
-            </Anchors>
-          </Button>
+          <!-- Hide extra rows to ensure content never clips the bottom; show 8 max -->
         </Frames>
       </Frame>
       <Frame name="$parentPageR" inherits="BackdropTemplate">
         <Anchors>
-          <Anchor point="TOPLEFT" x="534" y="-56"/>
+          <Anchor point="TOPLEFT" x="520" y="-56"/>
           <Anchor point="BOTTOMRIGHT" x="-64" y="60"/>
         </Anchors>
         <Frames>
@@ -334,17 +456,17 @@
           <!-- Tab bar -->
           <Frame name="$parentTabBar">
             <Size y="22"/>
-            <Anchors><Anchor point="TOPLEFT" y="-24"/><Anchor point="TOPRIGHT" y="-24"/></Anchors>
+            <Anchors><Anchor point="TOPLEFT" y="-22"/><Anchor point="TOPRIGHT" y="-22"/></Anchors>
             <Frames>
               <Button name="$parentTabOverview" inherits="UIPanelButtonTemplate" text="Overview">
                 <Size x="84" y="20"/>
-                <Anchors><Anchor point="LEFT" x="0"/></Anchors>
+                <Anchors><Anchor point="CENTER" x="-147"/></Anchors>
                 <Scripts><OnClick>if CMUI and CMUI.TabSwap then CMUI.TabSwap("Overview") end</OnClick></Scripts>
               </Button>
               <Button name="$parentTabProfile" inherits="UIPanelButtonTemplate" text="Profile">
                 <Size x="84" y="20"/>
                 <Anchors><Anchor point="LEFT" relativeTo="$parentTabOverview" relativePoint="RIGHT" x="8"/></Anchors>
-                <Scripts><OnClick>if CMUI and CMUI.TabSwap then CMUI.TabSwap("Profile") end</OnClick></Scripts>
+                <Scripts><OnClick>if CharacterMemory_OpenCharacterSheet then CharacterMemory_OpenCharacterSheet() end</OnClick></Scripts>
               </Button>
               <Button name="$parentTabNotes" inherits="UIPanelButtonTemplate" text="Notes">
                 <Size x="84" y="20"/>
@@ -372,21 +494,40 @@
           <Frame name="$parentOverview">
             <Anchors>
               <Anchor point="TOPLEFT" relativeTo="$parentTabBar" relativePoint="BOTTOMLEFT" x="8" y="-8"/>
-              <!-- Tighten bottom padding and ensure content fully visible within inset -->
-              <Anchor point="BOTTOMRIGHT" relativeTo="$parentInset" relativePoint="BOTTOMRIGHT" x="-8" y="8"/>
+              <!-- More right padding so content never clips spine -->
+              <Anchor point="BOTTOMRIGHT" relativeTo="$parentInset" relativePoint="BOTTOMRIGHT" x="-16" y="8"/>
             </Anchors>
             <Layers>
               <Layer level="OVERLAY">
                 <FontString name="$parentTitle" inherits="GameFontNormalLarge">
                   <Anchors><Anchor point="TOPLEFT" x="0" y="-4"/></Anchors>
                 </FontString>
-                <FontString name="$parentTier" inherits="GameFontDisable">
+                <FontString name="$parentTier" inherits="GameFontHighlightSmall">
                   <Anchors><Anchor point="TOPLEFT" relativeTo="$parentTitle" relativePoint="BOTTOMLEFT" x="0" y="-4"/></Anchors>
+                  <Color r="0.90" g="0.90" b="0.90"/>
                 </FontString>
                 <!-- Remove badges and portrait for a clean, text-only header -->
               </Layer>
             </Layers>
             <Frames>
+              <!-- Achievements mini bar next to the name in Overview header -->
+              <StatusBar name="$parentNameAchBar" minValue="0" maxValue="1" defaultValue="0">
+                <Size x="165" y="11"/>
+                <Anchors><Anchor point="TOPRIGHT" x="-8" y="-2"/></Anchors>
+                <BarTexture file="Interface/TargetingFrame/UI-StatusBar"/>
+                <Layers>
+                  <Layer level="BACKGROUND">
+                    <Texture parentKey="bg" setAllPoints="true" file="Interface/Tooltips/UI-Tooltip-Background">
+                      <Color r="0" g="0" b="0" a="0.4"/>
+                    </Texture>
+                  </Layer>
+                  <Layer level="OVERLAY">
+                    <FontString parentKey="value" inherits="GameFontHighlightSmall" justifyH="CENTER">
+                      <Anchors><Anchor point="CENTER"/></Anchors>
+                    </FontString>
+                  </Layer>
+                </Layers>
+              </StatusBar>
               <!-- Relation header -->
               <Frame name="$parentRelHeader" inherits="CMJ_CategoryHeader">
                 <Anchors>
@@ -399,48 +540,50 @@
                   </Layer>
                 </Layers>
               </Frame>
+              <!-- Achievements summary bar removed; mini bar by name replaces it -->
               <!-- Relation details (facts grid) -->
               <Frame name="$parentFacts">
-                <Size y="132"/>
+                <Size y="108"/>
                 <Anchors>
                   <Anchor point="TOPLEFT" relativeTo="$parentRelHeader" relativePoint="BOTTOMLEFT" x="0" y="-12"/>
-                  <Anchor point="RIGHT" x="-8" y="0"/>
+                  <Anchor point="RIGHT" x="-16" y="0"/>
                 </Anchors>
-                <Layers>
-                  <Layer level="OVERLAY">
-                    <!-- Left column (rows 1-5) -->
-                    <FontString name="$parentLabel1" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT"/></Anchors></FontString>
-                    <FontString name="$parentValue1" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel1" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <FontString name="$parentLabel2" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLabel1" relativePoint="BOTTOMLEFT" y="-8"/></Anchors></FontString>
-                    <FontString name="$parentValue2" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel2" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <FontString name="$parentLabel3" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLabel2" relativePoint="BOTTOMLEFT" y="-8"/></Anchors></FontString>
-                    <FontString name="$parentValue3" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel3" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <FontString name="$parentLabel4" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLabel3" relativePoint="BOTTOMLEFT" y="-8"/></Anchors></FontString>
-                    <FontString name="$parentValue4" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel4" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <FontString name="$parentLabel5" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLabel4" relativePoint="BOTTOMLEFT" y="-8"/></Anchors></FontString>
-                    <FontString name="$parentValue5" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel5" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <!-- Right column (rows 6-10) -->
-                    <FontString name="$parentLabel6" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" x="260" y="0"/></Anchors></FontString>
-                    <FontString name="$parentValue6" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel6" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <FontString name="$parentLabel7" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLabel6" relativePoint="BOTTOMLEFT" y="-8"/></Anchors></FontString>
-                    <FontString name="$parentValue7" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel7" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <FontString name="$parentLabel8" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLabel7" relativePoint="BOTTOMLEFT" y="-8"/></Anchors></FontString>
-                    <FontString name="$parentValue8" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel8" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <FontString name="$parentLabel9" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLabel8" relativePoint="BOTTOMLEFT" y="-8"/></Anchors></FontString>
-                    <FontString name="$parentValue9" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel9" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <FontString name="$parentLabel10" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLabel9" relativePoint="BOTTOMLEFT" y="-8"/></Anchors></FontString>
-                    <FontString name="$parentValue10" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel10" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <FontString name="$parentLabel11" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLabel10" relativePoint="BOTTOMLEFT" y="-8"/></Anchors></FontString>
-                    <FontString name="$parentValue11" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel11" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                    <FontString name="$parentLabel12" inherits="GameFontDisable"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentLabel11" relativePoint="BOTTOMLEFT" y="-8"/></Anchors></FontString>
-                    <FontString name="$parentValue12" inherits="GameFontHighlight"><Anchors><Anchor point="LEFT" relativeTo="$parentLabel12" relativePoint="RIGHT" x="8"/></Anchors></FontString>
-                  </Layer>
-                </Layers>
+                <Layers/>
+                <Frames>
+                  <!-- Left half (5 rows) -->
+                  <Frame name="$parentLeft">
+                    <Anchors>
+                      <Anchor point="TOPLEFT"/>
+                      <Anchor point="RIGHT" relativePoint="CENTER" x="-8" y="0"/>
+                    </Anchors>
+                    <Frames>
+                      <Frame name="$parentRow1" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow2" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow1" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow3" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow2" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow4" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow3" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow5" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow4" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors></Frame>
+                    </Frames>
+                  </Frame>
+                  <!-- Right half (5 rows) -->
+                  <Frame name="$parentRight">
+                    <Anchors>
+                      <Anchor point="TOPRIGHT"/>
+                      <Anchor point="LEFT" relativePoint="CENTER" x="8" y="0"/>
+                    </Anchors>
+                    <Frames>
+                      <Frame name="$parentRow1" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow2" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow1" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow3" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow2" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow4" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow3" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow5" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow4" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors></Frame>
+                    </Frames>
+                  </Frame>
+                </Frames>
               </Frame>
               <!-- Summary header -->
               <Frame name="$parentSummaryHeader" inherits="CMJ_CategoryHeader">
                 <Anchors>
-                  <Anchor point="TOPLEFT" relativeTo="$parentFacts" relativePoint="BOTTOMLEFT" x="0" y="-12"/>
+                  <Anchor point="TOPLEFT" relativeTo="$parentFacts" relativePoint="BOTTOMLEFT" x="0" y="-17"/>
                   <Anchor point="RIGHT"/>
                 </Anchors>
                 <Layers>
@@ -450,147 +593,56 @@
                 </Layers>
               </Frame>
               <Frame name="$parentSummary">
-                <Size y="148"/>
+                <Size y="96"/>
                 <Anchors>
                   <Anchor point="TOPLEFT" relativeTo="$parentSummaryHeader" relativePoint="BOTTOMLEFT" x="0" y="-6"/>
-                  <Anchor point="RIGHT" x="-8" y="0"/>
+                  <Anchor point="RIGHT" x="-16" y="0"/>
                 </Anchors>
+                <Layers/>
                 <Frames>
-                  <Frame name="$parentRow1" inherits="CMJ_StatRow">
-                    <Anchors><Anchor point="TOPLEFT"/><Anchor point="RIGHT"/></Anchors>
-                    <Layers><Layer level="OVERLAY"><FontString parentKey="label" inherits="GameFontDisable" text="Race"/></Layer></Layers>
+                  <!-- Left column -->
+                  <Frame name="$parentLeft">
+                    <Anchors>
+                      <Anchor point="TOPLEFT"/>
+                      <Anchor point="BOTTOMRIGHT" relativePoint="TOP" x="-8" y="0"/>
+                    </Anchors>
+                    <Frames>
+                      <Frame name="$parentRow1" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow2" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow1" relativePoint="BOTTOMLEFT" y="-8"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow3" inherits="CMJ_StatRowTwoLine"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow2" relativePoint="BOTTOMLEFT" y="-8"/><Anchor point="RIGHT"/></Anchors></Frame>
+                    </Frames>
                   </Frame>
-                  <Frame name="$parentRow2" inherits="CMJ_StatRow">
-                    <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow1" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors>
-                    <Layers><Layer level="OVERLAY"><FontString parentKey="label" inherits="GameFontDisable" text="Gender"/></Layer></Layers>
-                  </Frame>
-                  <Frame name="$parentRow3" inherits="CMJ_StatRow">
-                    <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow2" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors>
-                    <Layers><Layer level="OVERLAY"><FontString parentKey="label" inherits="GameFontDisable" text="Level"/></Layer></Layers>
-                  </Frame>
-                  <Frame name="$parentRow4" inherits="CMJ_StatRow">
-                    <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow3" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors>
-                    <Layers><Layer level="OVERLAY"><FontString parentKey="label" inherits="GameFontDisable" text="iLvl"/></Layer></Layers>
-                  </Frame>
-                  <Frame name="$parentRow5" inherits="CMJ_StatRow">
-                    <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow4" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors>
-                    <Layers><Layer level="OVERLAY"><FontString parentKey="label" inherits="GameFontDisable" text="Faction"/></Layer></Layers>
-                  </Frame>
-                  <Frame name="$parentRow6" inherits="CMJ_StatRow">
-                    <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow5" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors>
-                    <Layers><Layer level="OVERLAY"><FontString parentKey="label" inherits="GameFontDisable" text="Guild"/></Layer></Layers>
+                  <!-- Right column -->
+                  <Frame name="$parentRight">
+                    <Anchors>
+                      <Anchor point="TOPLEFT" relativePoint="TOP" x="8" y="0"/>
+                      <Anchor point="BOTTOMRIGHT"/>
+                    </Anchors>
+                    <Frames>
+                      <Frame name="$parentRow1" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow2" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow1" relativePoint="BOTTOMLEFT" y="-8"/><Anchor point="RIGHT"/></Anchors></Frame>
+                      <Frame name="$parentRow3" inherits="CMJ_StatRowTwoLine"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow2" relativePoint="BOTTOMLEFT" y="-8"/><Anchor point="RIGHT"/></Anchors></Frame>
+                    </Frames>
                   </Frame>
                 </Frames>
               </Frame>
-              <Frame name="$parentStatsHeader" inherits="CMJ_CategoryHeader">
+              <!-- Delete button in bottom right corner -->
+              <Button name="$parentDeleteBtn" inherits="UIPanelButtonTemplate" text="Delete Entry">
+                <Size x="100" y="24"/>
                 <Anchors>
-                  <Anchor point="TOPLEFT" relativeTo="$parentSummary" relativePoint="BOTTOMLEFT" x="0" y="-10"/>
-                  <Anchor point="RIGHT"/>
+                  <Anchor point="BOTTOMRIGHT" x="-8" y="-15"/>
                 </Anchors>
-                <Layers>
-                  <Layer level="OVERLAY">
-                    <FontString parentKey="text" inherits="GameFontNormalLarge" text="Activity"/>
-                  </Layer>
-                </Layers>
-              </Frame>
-              <Frame name="$parentStatsRow">
-                <Size y="22"/>
-                 <Anchors>
-                   <Anchor point="TOPLEFT" relativeTo="$parentStatsHeader" relativePoint="BOTTOMLEFT" x="0" y="-8"/>
-                  <Anchor point="RIGHT" x="-8" y="0"/>
-                </Anchors>
-            <Frames>
-              <Frame name="$parentItem1">
-                <Size x="84" y="22"/>
-                <Anchors><Anchor point="TOPLEFT"/></Anchors>
-                <Layers>
-                  <Layer level="OVERLAY">
-                    <FontString parentKey="fs" inherits="GameFontHighlight">
-                      <Anchors><Anchor point="LEFT" x="0"/></Anchors>
-                    </FontString>
-                  </Layer>
-                </Layers>
-              </Frame>
-              <Frame name="$parentItem2">
-                <Size x="84" y="22"/>
-                <Anchors><Anchor point="LEFT" relativeTo="$parentItem1" relativePoint="RIGHT" x="84"/></Anchors>
-                <Layers>
-                  <Layer level="OVERLAY">
-                    <FontString parentKey="fs" inherits="GameFontHighlight">
-                      <Anchors><Anchor point="LEFT" x="0"/></Anchors>
-                    </FontString>
-                  </Layer>
-                </Layers>
-              </Frame>
-              <Frame name="$parentItem3">
-                <Size x="84" y="22"/>
-                <Anchors><Anchor point="LEFT" relativeTo="$parentItem2" relativePoint="RIGHT" x="84"/></Anchors>
-                <Layers>
-                  <Layer level="OVERLAY">
-                    <FontString parentKey="fs" inherits="GameFontHighlight">
-                      <Anchors><Anchor point="LEFT" x="0"/></Anchors>
-                    </FontString>
-                  </Layer>
-                </Layers>
-              </Frame>
-              <Frame name="$parentItem4">
-                <Size x="84" y="22"/>
-                <Anchors><Anchor point="LEFT" relativeTo="$parentItem3" relativePoint="RIGHT" x="84"/></Anchors>
-                <Layers>
-                  <Layer level="OVERLAY">
-                    <FontString parentKey="fs" inherits="GameFontHighlight">
-                      <Anchors><Anchor point="LEFT" x="0"/></Anchors>
-                    </FontString>
-                  </Layer>
-                </Layers>
-              </Frame>
-              <Frame name="$parentItem5">
-                <Size x="84" y="22"/>
-                <Anchors><Anchor point="LEFT" relativeTo="$parentItem4" relativePoint="RIGHT" x="84"/></Anchors>
-                <Layers>
-                  <Layer level="OVERLAY">
-                    <FontString parentKey="fs" inherits="GameFontHighlight">
-                      <Anchors><Anchor point="LEFT" x="0"/></Anchors>
-                    </FontString>
-                  </Layer>
-                </Layers>
-              </Frame>
-              <Frame name="$parentItem6">
-                <Size x="84" y="22"/>
-                <Anchors><Anchor point="LEFT" relativeTo="$parentItem5" relativePoint="RIGHT" x="84"/></Anchors>
-                <Layers>
-                  <Layer level="OVERLAY">
-                    <FontString parentKey="fs" inherits="GameFontHighlight">
-                      <Anchors><Anchor point="LEFT" x="0"/></Anchors>
-                    </FontString>
-                  </Layer>
-                </Layers>
-              </Frame>
-              <Frame name="$parentItem7">
-                <Size x="84" y="22"/>
-                <Anchors><Anchor point="LEFT" relativeTo="$parentItem6" relativePoint="RIGHT" x="84"/></Anchors>
-                <Layers>
-                  <Layer level="OVERLAY">
-                    <FontString parentKey="fs" inherits="GameFontHighlight">
-                      <Anchors><Anchor point="LEFT" x="0"/></Anchors>
-                    </FontString>
-                  </Layer>
-                </Layers>
-              </Frame>
-              <!-- Extra cooperation row: ready checks and wipes -->
-              <Frame name="$parentItem8">
-                <Size x="84" y="22"/>
-                <Anchors><Anchor point="LEFT" relativeTo="$parentItem7" relativePoint="RIGHT" x="84"/></Anchors>
-            <Layers>
-              <Layer level="OVERLAY">
-                    <FontString parentKey="fs" inherits="GameFontHighlight">
-                      <Anchors><Anchor point="LEFT" x="0"/></Anchors>
-                </FontString>
-              </Layer>
-            </Layers>
-              </Frame>
-            </Frames>
-              </Frame>
+                <Scripts>
+                  <OnClick>
+                    if CMUI and CMUI.DeleteEntry and CMUI.GetSelectedEntry then
+                      local selectedId = CMUI.GetSelectedEntry()
+                      if selectedId then
+                        CMUI.DeleteEntry(selectedId)
+                      end
+                    end
+                  </OnClick>
+                </Scripts>
+              </Button>
               <!-- Facts grid removed to reduce clutter and fix alignment -->
             </Frames>
           </Frame>
@@ -618,44 +670,20 @@
               <Anchor point="BOTTOMRIGHT" relativeTo="$parentInset" relativePoint="BOTTOMRIGHT" x="-8" y="8"/>
             </Anchors>
             <Frames>
-              <!-- Identity display (read-only for viewing others) -->
-              <Frame name="$parentIdentHeader" inherits="CMJ_CategoryHeader">
-                <Anchors><Anchor point="TOPLEFT"/><Anchor point="RIGHT"/></Anchors>
-                <Layers><Layer level="OVERLAY"><FontString parentKey="text" inherits="GameFontNormalLarge" text="Identity"/></Layer></Layers>
+              <!-- Profile functionality moved to RPBio.xml -->
+              <Frame name="$parentPlaceholder">
+                <Anchors>
+                  <Anchor point="CENTER"/>
+                </Anchors>
+                <Layers>
+                  <Layer level="OVERLAY">
+                    <FontString inherits="GameFontNormalLarge" text="Profile functionality moved to RP Bio">
+                      <Anchors><Anchor point="CENTER"/></Anchors>
+                      <Color r="0.7" g="0.7" b="0.7"/>
+                    </FontString>
+                  </Layer>
+                </Layers>
               </Frame>
-              <Button name="$parentRequestBtn" inherits="UIPanelButtonTemplate" text="Request Bio">
-                <Size x="96" y="20"/>
-                <Anchors><Anchor point="TOPRIGHT" relativeTo="$parentIdentHeader" relativePoint="TOPRIGHT" x="0" y="0"/></Anchors>
-              </Button>
-              <Frame name="$parentIdent">
-                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentIdentHeader" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors>
-                <Frames>
-                  <Frame name="$parentRow1" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT"/><Anchor point="RIGHT"/></Anchors>
-                    <Layers><Layer level="OVERLAY"><FontString parentKey="label" inherits="GameFontDisable" text="Title"/></Layer></Layers>
-                  </Frame>
-                  <Frame name="$parentRow2" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow1" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors>
-                    <Layers><Layer level="OVERLAY"><FontString parentKey="label" inherits="GameFontDisable" text="Pronouns"/></Layer></Layers>
-                  </Frame>
-                  <Frame name="$parentRow3" inherits="CMJ_StatRow"><Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow2" relativePoint="BOTTOMLEFT" y="-6"/><Anchor point="RIGHT"/></Anchors>
-                    <Layers><Layer level="OVERLAY"><FontString parentKey="label" inherits="GameFontDisable" text="Tags"/></Layer></Layers>
-                  </Frame>
-                </Frames>
-              </Frame>
-              <EditBox name="$parentAgeEB" inherits="InputBoxTemplate"><Size x="100"/><Anchors><Anchor point="TOPLEFT" x="0" y="-4"/></Anchors></EditBox>
-              <EditBox name="$parentHeightEB" inherits="InputBoxTemplate"><Size x="100"/><Anchors><Anchor point="LEFT" relativeKey="$parentAgeEB" relativePoint="RIGHT" x="128"/></Anchors></EditBox>
-              <EditBox name="$parentWeightEB" inherits="InputBoxTemplate"><Size x="100"/><Anchors><Anchor point="LEFT" relativeKey="$parentHeightEB" relativePoint="RIGHT" x="128"/></Anchors></EditBox>
-              <EditBox name="$parentEyesEB" inherits="InputBoxTemplate"><Size x="100"/><Anchors><Anchor point="TOPLEFT" relativeKey="$parentAgeEB" relativePoint="BOTTOMLEFT" y="-48"/></Anchors></EditBox>
-              <EditBox name="$parentHairEB" inherits="InputBoxTemplate"><Size x="100"/><Anchors><Anchor point="LEFT" relativeKey="$parentEyesEB" relativePoint="RIGHT" x="128"/></Anchors></EditBox>
-              <EditBox name="$parentPersonalityEB" inherits="InputBoxTemplate" multiLine="true"><Size x="340" y="72"/><Anchors><Anchor point="TOPLEFT" relativeKey="$parentEyesEB" relativePoint="BOTTOMLEFT" y="-44"/></Anchors></EditBox>
-              <EditBox name="$parentIdealsEB" inherits="InputBoxTemplate" multiLine="true"><Size x="340" y="72"/><Anchors><Anchor point="TOPLEFT" relativeKey="$parentPersonalityEB" relativePoint="BOTTOMLEFT" y="-84"/></Anchors></EditBox>
-              <EditBox name="$parentBondsEB" inherits="InputBoxTemplate" multiLine="true"><Size x="340" y="72"/><Anchors><Anchor point="TOPLEFT" relativeKey="$parentIdealsEB" relativePoint="BOTTOMLEFT" y="-84"/></Anchors></EditBox>
-              <EditBox name="$parentFlawsEB" inherits="InputBoxTemplate" multiLine="true"><Size x="340" y="72"/><Anchors><Anchor point="TOPLEFT" relativeKey="$parentBondsEB" relativePoint="BOTTOMLEFT" y="-84"/></Anchors></EditBox>
-              <EditBox name="$parentBackgroundEB" inherits="InputBoxTemplate" multiLine="true"><Size x="340" y="72"/><Anchors><Anchor point="TOPLEFT" relativeKey="$parentFlawsEB" relativePoint="BOTTOMLEFT" y="-84"/></Anchors></EditBox>
-              <EditBox name="$parentLangEB" inherits="InputBoxTemplate"><Size x="160"/><Anchors><Anchor point="TOPLEFT" relativeKey="$parentBackgroundEB" relativePoint="BOTTOMLEFT" y="-84"/></Anchors></EditBox>
-              <EditBox name="$parentProfEB" inherits="InputBoxTemplate"><Size x="160"/><Anchors><Anchor point="LEFT" relativeKey="$parentLangEB" relativePoint="RIGHT" x="12"/></Anchors></EditBox>
-              <EditBox name="$parentAliasEB" inherits="InputBoxTemplate"><Size x="160"/><Anchors><Anchor point="TOPLEFT" relativeKey="$parentLangEB" relativePoint="BOTTOMLEFT" y="-6"/></Anchors></EditBox>
-              <EditBox name="$parentAlignEB" inherits="InputBoxTemplate"><Size x="160"/><Anchors><Anchor point="LEFT" relativeKey="$parentAliasEB" relativePoint="RIGHT" x="12"/></Anchors></EditBox>
-              <!-- Save removed from Profile tab: settings panel handles persistence -->
             </Frames>
           </Frame>
           
@@ -677,25 +705,25 @@
                 <Anchors><Anchor point="TOPLEFT" x="0" y="0"/><Anchor point="RIGHT"/></Anchors>
               </Frame>
               <Frame name="$parentRow2" inherits="CMJ_AchievementRowTemplate">
-                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow1" relativePoint="BOTTOMLEFT" y="-2"/><Anchor point="RIGHT"/></Anchors>
+                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow1" relativePoint="BOTTOMLEFT" y="-4"/><Anchor point="RIGHT"/></Anchors>
               </Frame>
               <Frame name="$parentRow3" inherits="CMJ_AchievementRowTemplate">
-                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow2" relativePoint="BOTTOMLEFT" y="-2"/><Anchor point="RIGHT"/></Anchors>
+                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow2" relativePoint="BOTTOMLEFT" y="-4"/><Anchor point="RIGHT"/></Anchors>
               </Frame>
               <Frame name="$parentRow4" inherits="CMJ_AchievementRowTemplate">
-                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow3" relativePoint="BOTTOMLEFT" y="-2"/><Anchor point="RIGHT"/></Anchors>
+                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow3" relativePoint="BOTTOMLEFT" y="-4"/><Anchor point="RIGHT"/></Anchors>
               </Frame>
               <Frame name="$parentRow5" inherits="CMJ_AchievementRowTemplate">
-                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow4" relativePoint="BOTTOMLEFT" y="-2"/><Anchor point="RIGHT"/></Anchors>
+                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow4" relativePoint="BOTTOMLEFT" y="-4"/><Anchor point="RIGHT"/></Anchors>
               </Frame>
               <Frame name="$parentRow6" inherits="CMJ_AchievementRowTemplate">
-                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow5" relativePoint="BOTTOMLEFT" y="-2"/><Anchor point="RIGHT"/></Anchors>
+                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow5" relativePoint="BOTTOMLEFT" y="-4"/><Anchor point="RIGHT"/></Anchors>
               </Frame>
               <Frame name="$parentRow7" inherits="CMJ_AchievementRowTemplate">
-                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow6" relativePoint="BOTTOMLEFT" y="-2"/><Anchor point="RIGHT"/></Anchors>
+                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow6" relativePoint="BOTTOMLEFT" y="-4"/><Anchor point="RIGHT"/></Anchors>
               </Frame>
               <Frame name="$parentRow8" inherits="CMJ_AchievementRowTemplate">
-                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow7" relativePoint="BOTTOMLEFT" y="-2"/><Anchor point="RIGHT"/></Anchors>
+                <Anchors><Anchor point="TOPLEFT" relativeTo="$parentRow7" relativePoint="BOTTOMLEFT" y="-4"/><Anchor point="RIGHT"/></Anchors>
               </Frame>
             </Frames>
           </Frame>
