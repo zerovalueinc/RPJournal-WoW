@@ -8,11 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.4] - 2024-12-19
 
 ### Added
-- **Version Control Setup**: Initialized Git repository with proper version control
-- **GitHub Integration**: Connected to GitHub repository at `https://github.com/zerovalueinc/RPJournal-WoW`
-- **Comprehensive Documentation**: Created detailed README.md with installation and usage instructions
-- **Project Structure Documentation**: Added clear project structure overview
-- **Development Guidelines**: Added contributing guidelines and support information
 - **Character Memory System**: Core relationship tracking functionality for players and NPCs
 - **XP-Based Relationship Levels**: Automatic XP gain through interactions and activities
 - **Journal Interface**: Parchment-style UI for viewing and managing relationship data
@@ -21,18 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Slash Commands**: Complete command system for addon interaction
 
 ### Changed
-- **Version Management**: Updated from v1.1.0 to v0.0.4 to reflect early development status
-- **Author Information**: Updated author from "You" to "detox1hp" in TOC file
-- **Repository URL**: Updated GitHub URL in TOC file to point to correct repository
-- **Documentation**: Completely rewrote README.md with modern formatting and comprehensive information
 - **UI Framework**: Implemented movable UI panels with proper combat handling
 - **Data Persistence**: Enhanced SavedVariables structure for per-character data storage
 - **Settings Integration**: Modern settings panel with RP Bio configuration
 
 ### Technical
-- **Git Configuration**: Added proper `.gitignore` for WoW addon development
-- **File Organization**: Ensured all project files are properly tracked in version control
-- **Cross-platform Compatibility**: Configured line ending handling for Windows development
 - **Performance Optimization**: Hoisted hot globals to locals for reduced CPU usage
 - **Error Handling**: Added defensive guards for WoW API calls
 - **Memory Management**: Efficient data structures for relationship tracking
