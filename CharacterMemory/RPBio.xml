@@ -1,0 +1,161 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+  <!-- Root window -->
+  <Frame name="RPBioFrame" parent="UIParent" inherits="BasicFrameTemplateWithInset" enableMouse="true" movable="true" hidden="true" frameStrata="DIALOG">
+    <Size x="700" y="560"/>
+    <Anchors><Anchor point="CENTER"/></Anchors>
+    <Scripts>
+      <OnLoad>
+        self:RegisterForDrag("LeftButton");
+        self.TitleText:SetText("RP Character Sheet");
+        self:SetToplevel(true);
+        self:SetFrameStrata("DIALOG");
+      </OnLoad>
+      <OnDragStart> self:StartMoving() </OnDragStart>
+      <OnDragStop> self:StopMovingOrSizing() </OnDragStop>
+    </Scripts>
+    <Frames>
+      <!-- Close (X) -->
+      <Button inherits="UIPanelCloseButton">
+        <Anchors><Anchor point="TOPRIGHT"><Offset x="-4" y="-4"/></Anchor></Anchors>
+      </Button>
+
+      <!-- Bottom controls -->
+      <Button name="RPBioSaveButton" inherits="UIPanelButtonTemplate" text="Save">
+        <Size x="140" y="24"/>
+        <Anchors><Anchor point="BOTTOMLEFT"><Offset x="12" y="12"/></Anchor></Anchors>
+        <Scripts><OnClick> if RPBio_Save then RPBio_Save() end </OnClick></Scripts>
+      </Button>
+      <Button inherits="UIPanelButtonTemplate" text="Close">
+        <Size x="140" y="24"/>
+        <Anchors><Anchor point="BOTTOMRIGHT"><Offset x="-12" y="12"/></Anchor></Anchors>
+        <Scripts><OnClick> self:GetParent():Hide() </OnClick></Scripts>
+      </Button>
+
+      <!-- Scroll area for content -->
+      <ScrollFrame name="RPBioScroll" inherits="UIPanelScrollFrameTemplate">
+        <Anchors>
+          <Anchor point="TOPLEFT"><Offset x="12" y="-28"/></Anchor>
+          <Anchor point="BOTTOMRIGHT"><Offset x="-28" y="48"/></Anchor>
+        </Anchors>
+      <ScrollChild>
+        <Frame name="RPBioContent">
+          <Size x="640" y="1720"/>
+          <Layers>
+            <Layer level="OVERLAY">
+              <!-- ===== Identity ===== -->
+              <FontString inherits="GameFontNormalLarge" text="Identity">
+                <Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-8"/></Anchor></Anchors>
+                <Color r="1" g="0.84" b="0"/>
+              </FontString>
+              <FontString inherits="GameFontNormal" text="Title"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-36"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Nicknames / Aliases"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-68"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Pronouns"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-100"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Race / Sub-race"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-132"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Homeland / Origin"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-164"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Current Residence"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-196"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Affiliations / Guilds"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-228"/></Anchor></Anchors></FontString>
+
+              <!-- ===== Appearance ===== -->
+              <FontString inherits="GameFontNormalLarge" text="Appearance"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-268"/></Anchor></Anchors><Color r="1" g="0.84" b="0"/></FontString>
+              <FontString inherits="GameFontNormal" text="Height"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-296"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Build / Body Type"><Anchors><Anchor point="TOPLEFT"><Offset x="320" y="-296"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Eyes"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-328"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Hair"><Anchors><Anchor point="TOPLEFT"><Offset x="320" y="-328"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Distinctive Features"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-360"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Typical Attire / Style"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-392"/></Anchor></Anchors></FontString>
+
+              <!-- ===== Lore ===== -->
+              <FontString inherits="GameFontNormalLarge" text="Lore"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-436"/></Anchor></Anchors><Color r="1" g="0.84" b="0"/></FontString>
+              <FontString inherits="GameFontNormal" text="Short Bio (max 500)"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-464"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Backstory / Lore Notes"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-552"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Alignment"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-720"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Creed / Beliefs"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-752"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Notable Deeds / History"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-784"/></Anchor></Anchors></FontString>
+
+              <!-- ===== Personality ===== -->
+              <FontString inherits="GameFontNormalLarge" text="Personality"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-876"/></Anchor></Anchors><Color r="1" g="0.84" b="0"/></FontString>
+              <FontString inherits="GameFontNormal" text="Traits (comma-separated)"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-904"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Ideals"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-936"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Bonds"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-968"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Flaws"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1000"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="RP Hooks"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1032"/></Anchor></Anchors></FontString>
+
+              <!-- ===== Skills & Day-to-Day ===== -->
+              <FontString inherits="GameFontNormalLarge" text="Skills &amp; Day-to-Day"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1124"/></Anchor></Anchors><Color r="1" g="0.84" b="0"/></FontString>
+              <FontString inherits="GameFontNormal" text="Occupation / Profession"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1152"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Languages"><Anchors><Anchor point="TOPLEFT"><Offset x="320" y="-1152"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Hobbies (comma-separated)"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1184"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Combat Specialty / Magic Focus"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1216"/></Anchor></Anchors></FontString>
+
+              
+
+              <!-- ===== RP Preferences ===== -->
+              <FontString inherits="GameFontNormalLarge" text="RP Preferences"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1260"/></Anchor></Anchors><Color r="1" g="0.84" b="0"/></FontString>
+              <FontString inherits="GameFontNormal" text="Availability"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1288"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Tone (tags, comma-separated)"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1320"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Limits / Content Warnings"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1352"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="OOC Contact (Discord/BattleTag)"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1432"/></Anchor></Anchors></FontString>
+
+              <!-- ===== Notes ===== -->
+              <FontString inherits="GameFontNormalLarge" text="Notes"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1476"/></Anchor></Anchors><Color r="1" g="0.84" b="0"/></FontString>
+              <FontString inherits="GameFontNormal" text="Public Notes"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1504"/></Anchor></Anchors></FontString>
+              <FontString inherits="GameFontNormal" text="Private Notes"><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1592"/></Anchor></Anchors></FontString>
+            </Layer>
+          </Layers>
+          <Frames>
+            <EditBox name="RPBio_Title" inherits="InputBoxTemplate" autoFocus="false" letters="128"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-32"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Nicknames" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-64"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Pronouns" inherits="InputBoxTemplate" autoFocus="false" letters="64"><Size x="220" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-96"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Race" inherits="InputBoxTemplate" autoFocus="false" letters="128"><Size x="220" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-128"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Homeland" inherits="InputBoxTemplate" autoFocus="false" letters="128"><Size x="220" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-160"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Residence" inherits="InputBoxTemplate" autoFocus="false" letters="128"><Size x="220" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-192"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Affiliations" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-224"/></Anchor></Anchors></EditBox>
+
+            <EditBox name="RPBio_Height" inherits="InputBoxTemplate" autoFocus="false" letters="32"><Size x="120" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-292"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Build" inherits="InputBoxTemplate" autoFocus="false" letters="64"><Size x="180" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="480" y="-292"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Eyes" inherits="InputBoxTemplate" autoFocus="false" letters="64"><Size x="120" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-324"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Hair" inherits="InputBoxTemplate" autoFocus="false" letters="64"><Size x="180" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="480" y="-324"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Features" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-356"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Attire" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-388"/></Anchor></Anchors></EditBox>
+
+            <ScrollFrame name="RPBio_ShortBio" inherits="InputScrollFrameTemplate"><Size x="460" y="80"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-460"/></Anchor></Anchors></ScrollFrame>
+            <ScrollFrame name="RPBio_Backstory" inherits="InputScrollFrameTemplate"><Size x="460" y="160"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-548"/></Anchor></Anchors></ScrollFrame>
+            <Frame name="RPBio_AlignmentDD" inherits="UIDropDownMenuTemplate"><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-712"/></Anchor></Anchors></Frame>
+            <EditBox name="RPBio_Creed" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-748"/></Anchor></Anchors></EditBox>
+            <ScrollFrame name="RPBio_Deeds" inherits="InputScrollFrameTemplate"><Size x="460" y="80"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-780"/></Anchor></Anchors></ScrollFrame>
+
+            <EditBox name="RPBio_Traits" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-900"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Ideals" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-932"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Bonds" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-964"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Flaws" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-996"/></Anchor></Anchors></EditBox>
+            <ScrollFrame name="RPBio_Hooks" inherits="InputScrollFrameTemplate"><Size x="460" y="80"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-1028"/></Anchor></Anchors></ScrollFrame>
+
+            <EditBox name="RPBio_Occupation" inherits="InputBoxTemplate" autoFocus="false" letters="128"><Size x="220" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-1148"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Languages" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="220" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="480" y="-1148"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_Hobbies" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-1180"/></Anchor></Anchors></EditBox>
+            <EditBox name="RPBio_CombatFocus" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-1212"/></Anchor></Anchors></EditBox>
+
+            
+
+            <Frame name="RPBio_AvailabilityDD" inherits="UIDropDownMenuTemplate"><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-1288"/></Anchor></Anchors></Frame>
+            <EditBox name="RPBio_Tone" inherits="InputBoxTemplate" autoFocus="false" letters="256"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-1320"/></Anchor></Anchors></EditBox>
+            <ScrollFrame name="RPBio_Limits" inherits="InputScrollFrameTemplate"><Size x="460" y="72"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-1352"/></Anchor></Anchors></ScrollFrame>
+            <CheckButton name="RPBio_LimitsPrivate" inherits="UICheckButtonTemplate">
+              <Anchors>
+                <Anchor point="TOPLEFT" relativeTo="RPBio_Limits" relativePoint="TOPRIGHT"><Offset x="8" y="-2"/></Anchor>
+              </Anchors>
+              <Scripts><OnLoad> self.text:SetText("Private"); </OnLoad></Scripts>
+            </CheckButton>
+            <EditBox name="RPBio_OOC" inherits="InputBoxTemplate" autoFocus="false" letters="128"><Size x="460" y="24"/><Anchors><Anchor point="TOPLEFT"><Offset x="170" y="-1432"/></Anchor></Anchors></EditBox>
+
+            <ScrollFrame name="RPBio_PublicNotes" inherits="InputScrollFrameTemplate"><Size x="640" y="80"/><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1504"/></Anchor></Anchors></ScrollFrame>
+            <ScrollFrame name="RPBio_PrivateNotes" inherits="InputScrollFrameTemplate"><Size x="640" y="80"/><Anchors><Anchor point="TOPLEFT"><Offset x="8" y="-1592"/></Anchor></Anchors></ScrollFrame>
+          </Frames>
+        </Frame>
+        </ScrollChild>
+      </ScrollFrame>
+    </Frames>
+  </Frame>
+</Ui>
+
+

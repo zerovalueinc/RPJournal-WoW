@@ -36,7 +36,7 @@ local DEBUG_TINT = false
 
 -- Mock model
 local Model = {
-  entries = {}, order = {}, sort = "name",
+  entries = {}, order = {}, sort = "priority",
   selected = nil, scrollOffset = 0,
 }
 
@@ -97,10 +97,33 @@ function CMJ.RefreshAchievements()
 end
 
 -- Optimize SortFunc by caching frequently accessed data
+local function computePriorityScore(e)
+  if type(e) ~= "table" then return 0 end
+  local score = 0
+  -- Strong signals
+  if e.isFriend then score = score + 100000 end
+  if e.guildName and e.guildName ~= "" then score = score + 50000 end
+  -- Relationship level from XP (bigger weight)
+  local relLevel = (e.level) or (_G.computeLevelFromXP and _G.computeLevelFromXP(tonumber(e.xp) or 0)) or 0
+  score = score + (tonumber(relLevel) or 0) * 200
+  -- Character level (smaller weight)
+  score = score + (tonumber(e.charLevel or 0) or 0) * 10
+  -- Recent activity hints
+  local s = e.stats or {}
+  score = score + ((s.parties or 0) + (s.raids or 0)) * 50
+  score = score + ((s.whispers or 0) + (s.trades or 0) + (s.duels or 0)) * 5
+  if e.lastSeenAt and e.lastSeenAt ~= "" then score = score + 250 end
+  return score
+end
+
 local function SortFunc(a, b)
   local ea, eb = Model.entries[a] or {}, Model.entries[b] or {}
   local sortKey = Model.sort
-  if sortKey == "last" then
+  if sortKey == "priority" then
+    local sa, sb = computePriorityScore(ea), computePriorityScore(eb)
+    if sa ~= sb then return sa > sb end
+    return (ea.name or "") < (eb.name or "")
+  elseif sortKey == "last" then
     return (ea.lastSeenAt or "") > (eb.lastSeenAt or "")
   elseif sortKey == "tier" then
     return (ea.tier or "") < (eb.tier or "")
@@ -226,43 +249,28 @@ local function SaveUIState()
   J.scroll = Model.scrollOffset or 0
 end
 
--- Adventure Guide-like card skin helper (file-scope so list builders can reuse)
-local function SkinRowLikeAdventureCard(row)
-  if not row or row._cardSkinned then return end
-  row._cardSkinned = true
-  row:SetBackdrop({
-    bgFile = "Interface/FrameGeneral/UI-Background-Rock",
-    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-    edgeSize = 12,
-    insets = { left = 3, right = 3, top = 3, bottom = 3 },
-  })
-  row:SetBackdropColor(1, 1, 1, 0.12)
-  row:SetBackdropBorderColor(0.92, 0.78, 0.45, 0.80)
-  local glow = row:CreateTexture(nil, "BORDER")
-  glow:SetAllPoints(true)
-  glow:SetColorTexture(1, 1, 0.8, 0.06)
-  glow:Hide()
-  row._cardGlow = glow
-end
+-- Skins are defined in XML; no Lua-driven row skinning
+local function SkinRowLikeAdventureCard(row) end
 
 local function ApplyFilter()
-  -- Rebuild visible order without search filtering (search removed)
+  -- Rebuild visible order
   wipe(Model.order)
   for id, e in pairs(Model.entries) do
-    if type(id) == "string" and id:match("^Player%-") and (not e or e.isPlayer ~= false) then
-      -- Hide strangers from friendship list
-      local isStranger = true
-      if type(e) == "table" then
+    if type(id) == "string" and id:match("^Player%-") then
+      -- Optional: user setting to hide strangers
+      local hideStrangers = false
+      if _G.CharacterMemoryDB and _G.CharacterMemoryDB.settings then
+        hideStrangers = _G.CharacterMemoryDB.settings.hideStrangers and true or false
+      end
+      local include = true
+      if hideStrangers and type(e) == "table" then
         local level = tonumber(e.level or 0) or 0
         local xp = tonumber(e.xp or 0) or 0
         local tier = e.tier
-        isStranger = (tier == "Stranger") or (level <= 0 and xp <= 0)
+        local isStranger = (tier == "Stranger") or (level <= 0 and xp <= 0)
+        include = not isStranger
       end
-      -- Always include the player's own entry even if it would be filtered
-      local playerGUID = UnitGUID and UnitGUID("player")
-      if not isStranger or (playerGUID and id == playerGUID) then
-        table.insert(Model.order, id)
-      end
+      if include then table.insert(Model.order, id) end
     end
   end
   table.sort(Model.order, SortFunc)
@@ -273,6 +281,23 @@ local function ApplyFilter()
 end
 
 CMJ.refs = CMJ.refs or {}
+
+-- Lightweight throttle for auto bio requests when selecting a character
+local lastBioRequestAt = {}
+local BIO_REQUEST_COOLDOWN = 15 -- seconds
+local function maybeRequestBioFor(id, e)
+  if not id or type(e) ~= "table" then return end
+  local p = e.profile or {}
+  local hasPublic = type(p.publicBio) == "string" and p.publicBio ~= ""
+  if hasPublic then return end
+  -- Need a name to whisper
+  local name = e.name
+  if not name or name == "" then return end
+  local now = GetTime and GetTime() or 0
+  if (lastBioRequestAt[id] or 0) + BIO_REQUEST_COOLDOWN > now then return end
+  lastBioRequestAt[id] = now
+  if _G.CharacterMemory_RequestBioFrom then pcall(_G.CharacterMemory_RequestBioFrom, name) end
+end
 
 -- File-scope row factory so both initial build and rebuild share identical visuals/behavior
 local function CreateListRow(parent)
@@ -285,8 +310,7 @@ local function CreateListRow(parent)
   r.sub = r.sub
   r.date = r.date
   r.sel = r.sel
-  r:SetHighlightTexture("Interface/FriendsFrame/UI-FriendsFrame-HighlightBar", "ADD")
-  local htx = r:GetHighlightTexture(); if htx then htx:ClearAllPoints(); htx:SetPoint("TOPLEFT", 0, 0); htx:SetPoint("BOTTOMRIGHT", 0, 0); htx:SetAlpha(0.25) end
+  -- Highlight texture and visuals are defined via XML template
   r:SetScript("OnEnter", function(self)
     if self.id then
       local e = Model.entries[self.id] or {}
@@ -303,6 +327,9 @@ local function CreateListRow(parent)
   r:SetScript("OnClick", function(self)
     if not self.id then return end
     Model.selected = self.id; CMJ.RefreshList(); CMJ.PopulateDetail(self.id)
+    -- Auto-request bio if missing
+    local e = Model.entries[self.id]
+    if e then maybeRequestBioFor(self.id, e) end
     if CharacterMemoryDB and CharacterMemoryDB.settings and CharacterMemoryDB.settings.ui and CharacterMemoryDB.settings.ui.journal then
       CharacterMemoryDB.settings.ui.journal.lastSelected = self.id
     end
@@ -640,11 +667,9 @@ function CMJ.RefreshList()
     if idx<=total then local id=Model.order[idx]; local e=Model.entries[id] or {}
       row.id=id
       local tierText = string_format("Lv %d • %s", e.level or 0, e.tier or "Stranger")
-      local dateText = (CMUI and CMUI.FmtDate and CMUI.FmtDate(e.lastSeenAt)) or (e.lastSeenAt and e.lastSeenAt:sub(1,10)) or "—"
       row.name:SetText(ColorizeNameByClass(e.name or "Unknown", e.classFile))
       row.sub:SetText(tierText)
-      row.date:SetText(dateText)
-      if row.date and row.date.SetJustifyH then row.date:SetJustifyH("RIGHT") end
+      if row.date then row.date:SetText("") end
       local isSel = (Model.selected==id)
       row.sel:SetShown(isSel); if row.selBG then row.selBG:SetShown(isSel) end
       -- no portrait rendering
@@ -691,6 +716,8 @@ end
 function CMJ.PopulateDetail(id)
   local R=CMJ.refs; if not R then return end
   local e=Model.entries[id] or {}
+  -- Ensure we have a public bio; if not, try to request it once here
+  if e and (not e.profile or not e.profile.publicBio or e.profile.publicBio == "") then maybeRequestBioFor(id, e) end
   R.title:SetText(ColorizeNameByClass(e.name or "Unknown", e.classFile)); R.tier:SetText(e.tier or "Stranger")
   -- Optional subtitle if available
   if R.titleSub then R.titleSub:SetText(string_format("Lv %d • %s • %d XP", e.level or 0, e.tier or "Stranger", e.xp or 0)) end

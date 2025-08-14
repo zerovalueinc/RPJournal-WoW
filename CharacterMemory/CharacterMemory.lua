@@ -204,8 +204,9 @@ local function ensureOptionsPanelRegistered()
     end
     -- Register RP Bio as a subcategory under the main category (left nav child)
     if _G.CM_OptionsCategory and _G.CM_BioPanel and not _G.CM_BioSubcategory then
-      -- Use the existing CM_BioPanel as the subpage canvas (hidden until selected)
+      -- Use the existing CM_BioPanel as the subpage canvas, constrained by Settings container
       local canvas = _G.CM_BioPanel
+      canvas:ClearAllPoints(); canvas:SetPoint("TOPLEFT"); canvas:SetPoint("BOTTOMRIGHT")
       local sub = Settings.RegisterCanvasLayoutSubcategory(_G.CM_OptionsCategory, canvas, "RP Bio")
       sub.ID = "CharacterMemoryBioSub"
       _G.CM_BioSubcategory = sub
@@ -213,6 +214,69 @@ local function ensureOptionsPanelRegistered()
   elseif _G.InterfaceOptions_AddCategory then
     -- Classic/older
     _G.InterfaceOptions_AddCategory(_G.CM_OptionsPanel)
+  end
+end
+
+-- Ensure our canvases close with Escape and edit boxes don't trap movement keys
+local function wireEscapeAndFocus()
+  -- Allow ESC to hide these frames if they are ever shown standalone
+  if type(UISpecialFrames) == "table" then
+    local names = { "CM_OptionsPanel", "CM_BioPanel", "CMJ_RootXML" }
+    for _, frameName in ipairs(names) do
+      if _G[frameName] then
+        local already = false
+        for i = 1, #UISpecialFrames do
+          if UISpecialFrames[i] == frameName then already = true break end
+        end
+        if not already then table.insert(UISpecialFrames, frameName) end
+      end
+    end
+  end
+
+  -- Helper to apply common edit box behaviors
+  local function configureEditBox(edit)
+    if not edit or not edit.IsObjectType or not edit:IsObjectType("EditBox") then return end
+    if edit.SetAutoFocus then edit:SetAutoFocus(false) end
+    if edit.SetAltArrowKeyMode then edit:SetAltArrowKeyMode(false) end
+    if edit.SetPropagateKeyboardInput then edit:SetPropagateKeyboardInput(true) end
+    if edit.HookScript then
+      edit:HookScript("OnEscapePressed", function(self) self:ClearFocus() end)
+      edit:HookScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    end
+  end
+
+  -- Apply to RP Bio page fields (guard existence; XML may not be loaded yet)
+  local editNames = {
+    "CM_BioPanelTitleEdit",
+    "CM_BioPanelPronounsEdit",
+    "CM_BioPanelAlignmentEdit",
+    "CM_BioPanelTagsEdit",
+    "CM_BioPanelAgeEdit",
+    "CM_BioPanelHeightEdit",
+    "CM_BioPanelWeightEdit",
+    "CM_BioPanelEyesEdit",
+    "CM_BioPanelHairEdit",
+    "CM_BioPanelAliasEdit",
+    "CM_BioPanelLanguagesEdit",
+    "CM_BioPanelProficienciesEdit",
+    "CM_BioPanelBioEdit",
+    -- Hidden legacy placeholder on options panel
+    "CM_OptionsPanelBioEdit",
+  }
+  for _, name in ipairs(editNames) do configureEditBox(_G[name]) end
+
+  -- Clear focus whenever panels are hidden
+  local function clearAll()
+    for _, name in ipairs(editNames) do
+      local e = _G[name]
+      if e and e.ClearFocus then pcall(function() e:ClearFocus() end) end
+    end
+  end
+  if _G.CM_BioPanel and _G.CM_BioPanel.HookScript then
+    _G.CM_BioPanel:HookScript("OnHide", clearAll)
+  end
+  if _G.CM_OptionsPanel and _G.CM_OptionsPanel.HookScript then
+    _G.CM_OptionsPanel:HookScript("OnHide", clearAll)
   end
 end
 
@@ -224,8 +288,8 @@ function CharacterMemory_OptionsOnShow()
   local guid = UnitGUID and UnitGUID("player")
   local e = guid and CharacterMemoryDB.entries[guid]
   local bio = (e and e.profile and (e.profile.publicBio or e.profile.background)) or ""
-  if _G.CM_OptionsPanelBioEdit then _G.CM_OptionsPanelBioEdit:SetText(bio) end
-  if _G.CM_BioPanelBioEdit then _G.CM_BioPanelBioEdit:SetText(bio) end
+  if _G.CM_OptionsPanelBioEdit and _G.CM_OptionsPanelBioEdit.SetText then _G.CM_OptionsPanelBioEdit:SetText(bio) end
+  if _G.CM_BioPanelBioEdit and _G.CM_BioPanelBioEdit.SetText then _G.CM_BioPanelBioEdit:SetText(bio) end
   -- Populate on the new Bio page when available
   if _G.CM_BioPanelTitleEdit then _G.CM_BioPanelTitleEdit:SetText((e and e.profile and e.profile.title) or "") end
   if _G.CM_BioPanelPronounsEdit then _G.CM_BioPanelPronounsEdit:SetText((e and e.profile and e.profile.pronouns) or "") end
@@ -245,10 +309,7 @@ function CharacterMemory_OptionsOnShow()
   if _G.CM_BioPanelFlawsEdit then _G.CM_BioPanelFlawsEdit:SetText((e and e.profile and e.profile.flaws) or "") end
   if _G.CM_BioPanelHobbiesEdit then _G.CM_BioPanelHobbiesEdit:SetText((e and e.profile and e.profile.hobbies) or "") end
   -- Main page preview removed
-  -- Bio panel scroll child
-  if _G.CM_BioPanelScroll and _G.CM_BioPanelBioEdit then
-    _G.CM_BioPanelScroll:SetScrollChild(_G.CM_BioPanelBioEdit)
-  end
+  -- Bio panel no longer uses a scroll frame
   if _G.CM_OptionsPanelShowOnTarget then _G.CM_OptionsPanelShowOnTarget:SetChecked(CharacterMemoryDB.settings.showOnTarget and true or false) end
   if _G.CM_OptionsPanelShowBadges then _G.CM_OptionsPanelShowBadges:SetChecked((CharacterMemoryDB.settings.showBadges ~= false)) end
   if _G.CM_OptionsPanelEnableInspect then _G.CM_OptionsPanelEnableInspect:SetChecked((CharacterMemoryDB.settings.enableInspect ~= false)) end
@@ -1444,6 +1505,7 @@ evt:SetScript("OnEvent", function(self, event, ...)
     local addon = ...
     if addon == ADDON_NAME then
       initializeDatabase()
+      wireEscapeAndFocus()
       fixupEntries()
       ensureOptionsPanelRegistered()
       -- Seed player's own item level immediately

@@ -2,8 +2,8 @@
 ## Title: RPJournal
 ## Notes: RP relationship journal with parchment UI. Left list + right details, notes, achievements.
 ## Author: You
-## Version: 1.0.1
-## SavedVariablesPerCharacter: CharacterMemoryDB
+## Version: 1.1.0
+## SavedVariablesPerCharacter: CharacterMemoryDB, RPJournalDB
 ## IconTexture: Interface\AddOns\CharacterMemory\media\CMcompact.png
 ## X-Category: Roleplay
 ## X-Website: https://github.com/YOUR_GITHUB_USERNAME/RPJournal
@@ -11,6 +11,8 @@
 CharacterMemory.lua
 CM_Journal.lua
 CharacterMemory.xml
+RPBio.xml
+RPBio.lua
 
 # Do not list image assets here; textures are loaded by path at runtime.
 
