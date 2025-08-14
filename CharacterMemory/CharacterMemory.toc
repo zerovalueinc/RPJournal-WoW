@@ -1,8 +1,8 @@
 ## Interface: 110100
 ## Title: RPJournal
 ## Notes: RP relationship journal with parchment UI. Left list + right details, notes, achievements.
-## Author: ZachC
-## Version: 0.0.1
+## Author: detox1hp
+## Version: 0.0.4
 ## SavedVariablesPerCharacter: CharacterMemoryDB, RPJournalDB
 ## IconTexture: Interface\AddOns\CharacterMemory\media\CMcompact.png
 ## X-Category: Roleplay
