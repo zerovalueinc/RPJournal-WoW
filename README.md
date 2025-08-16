@@ -2,7 +2,7 @@
 
 A World of Warcraft addon for roleplayers to track relationships with other players and NPCs, featuring a leveling system and journal functionality.
 
-## Version: 0.0.4
+## Version: 0.0.5
 
 ## Features
 
@@ -70,5 +70,5 @@ For issues, feature requests, or questions, please open an issue on GitHub.
 
 ---
 
-**Note**: This addon is currently in early development (v0.0.4). Features may change and bugs may exist. Please report any issues you encounter.
+**Note**: This addon is currently in early development (v0.0.5). Features may change and bugs may exist. Please report any issues you encounter.
 

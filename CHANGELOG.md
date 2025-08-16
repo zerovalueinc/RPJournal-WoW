@@ -5,6 +5,17 @@ All notable changes to the Character Memory WoW addon will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.5] - 2025-01-15
+
+### Fixed
+- **Critical Bug Fix**: Fixed function scope issue causing "attempt to call global 'awardToAllGroupmates' (a nil value)" error
+- **Dungeon Completion Tracking**: Resolved issue where dungeon completion rewards were not being awarded to group members
+- **Function Order**: Moved `awardToAllGroupmates` and `incStatForAllGroupmates` functions before `maybeCreditDungeonOnExit` to fix Lua scope issues
+
+### Technical
+- **Hotfix**: Emergency fix for WoW update compatibility issues
+- **Code Organization**: Improved function ordering to prevent nil value errors
+
 ## [0.0.4] - 2024-12-19
 
 ### Added
@@ -55,7 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History Notes
 
-- **v0.0.4**: Current development version - Early alpha with basic functionality
+- **v0.0.5**: Current stable version - Hotfix for critical function scope bug
+- **v0.0.4**: Previous development version - Early alpha with basic functionality
 - **v0.0.3**: Previous stable release with RP Character Sheet features
 - **v0.0.2**: Initial stable release with core journal functionality
 

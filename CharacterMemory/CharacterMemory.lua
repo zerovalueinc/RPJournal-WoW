@@ -1075,30 +1075,6 @@ local function resetDungeonRun()
   DungeonRun.active, DungeonRun.instanceID, DungeonRun.lastBossKillAt, DungeonRun.credited = false, nil, 0, false
 end
 
-local function maybeCreditDungeonOnExit()
-  -- If we recently killed a boss in a 5-man and we leave the instance without
-  -- seeing LFG/Scenario/Challenge completion events, count a completion once.
-  if not DungeonRun.active or DungeonRun.credited then return end
-  local now = GetTime and GetTime() or 0
-  if (now - (DungeonRun.lastBossKillAt or 0)) > 900 then -- safety window 15m
-    resetDungeonRun()
-    return
-  end
-  awardToAllGroupmates(100, "dungeon complete")
-  incStatForAllGroupmates("dungeonCompletions", 1)
-  DungeonRun.credited = true
-  resetDungeonRun()
-end
-
-local function isInInstanceOfTypes(types)
-  local inInstance, instType = IsInInstance()
-  if not inInstance then return false end
-  for _, t in ipairs(types) do
-    if instType == t then return true end
-  end
-  return false
-end
-
 -- Iterate current group's member GUIDs (excluding the player) and invoke a callback
 local function forEachGroupmateGUID(callback)
   if type(callback) ~= "function" then return end
@@ -1132,6 +1108,30 @@ local function incStatForAllGroupmates(key, amount)
   forEachGroupmateGUID(function(guid)
     incStat(guid, key, amount or 1)
   end)
+end
+
+local function maybeCreditDungeonOnExit()
+  -- If we recently killed a boss in a 5-man and we leave the instance without
+  -- seeing LFG/Scenario/Challenge completion events, count a completion once.
+  if not DungeonRun.active or DungeonRun.credited then return end
+  local now = GetTime and GetTime() or 0
+  if (now - (DungeonRun.lastBossKillAt or 0)) > 900 then -- safety window 15m
+    resetDungeonRun()
+    return
+  end
+  awardToAllGroupmates(100, "dungeon complete")
+  incStatForAllGroupmates("dungeonCompletions", 1)
+  DungeonRun.credited = true
+  resetDungeonRun()
+end
+
+local function isInInstanceOfTypes(types)
+  local inInstance, instType = IsInInstance()
+  if not inInstance then return false end
+  for _, t in ipairs(types) do
+    if instType == t then return true end
+  end
+  return false
 end
 
 local function awardIfTargetGroupmate(amount, reason)
