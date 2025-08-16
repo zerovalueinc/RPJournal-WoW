@@ -80,6 +80,14 @@ local computeLevelFromXP
 local computeTierFromLevel
 local getOrCreateEntry
 local awardXP
+local awardToAllGroupmates
+local incStatForAllGroupmates
+local maybeCreditDungeonOnExit
+local handleLFGCompletion
+local handleChallengeModeCompleted
+local handleScenarioCompleted
+local handlePvpMatchComplete
+local resetDungeonRun
 
 local function initializeDatabase()
   CharacterMemoryDB.version = CharacterMemoryDB.version or 1
